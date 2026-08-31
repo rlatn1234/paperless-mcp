@@ -11,7 +11,7 @@ A fork of [nloui/paperless-mcp](https://github.com/nloui/paperless-mcp), rebuilt
 ## Install
 
 ```bash
-npm install -g @rlatn1234/paperless-mcp
+npm install -g @rlatn0123/paperless-mcp
 ```
 
 Get an API token from your paperless-ngx instance: click your username → **My Profile** → the circular arrow next to *API Auth Token*.
@@ -23,7 +23,7 @@ Get an API token from your paperless-ngx instance: click your username → **My 
   "mcpServers": {
     "paperless": {
       "command": "npx",
-      "args": ["@rlatn1234/paperless-mcp", "https://paperless.example.com", "your-api-token"]
+      "args": ["@rlatn0123/paperless-mcp", "https://paperless.example.com", "your-api-token"]
     }
   }
 }
@@ -36,7 +36,7 @@ Credentials can come from the environment instead, which keeps the token out of 
   "mcpServers": {
     "paperless": {
       "command": "npx",
-      "args": ["@rlatn1234/paperless-mcp"],
+      "args": ["@rlatn0123/paperless-mcp"],
       "env": {
         "PAPERLESS_URL": "https://paperless.example.com",
         "PAPERLESS_API_KEY": "your-api-token"

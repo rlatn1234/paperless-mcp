@@ -1,5 +1,5 @@
 {
-  "name": "@rlatn1234/paperless-mcp",
+  "name": "@rlatn0123/paperless-mcp",
   "version": "0.2.0",
   "description": "Model Context Protocol (MCP) server for paperless-ngx. Exposes the complete paperless-ngx REST API — documents, tags, correspondents, document types, storage paths, custom fields, bulk operations, workflows, mail rules and administration — to AI assistants.",
   "type": "module",
