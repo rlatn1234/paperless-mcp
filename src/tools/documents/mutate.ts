@@ -5,9 +5,9 @@ import { z } from "zod";
 import { PaperlessError } from "../../paperless/errors.js";
 import { nameOf, namesOf } from "../../paperless/taxonomyCache.js";
 import { defineTool } from "../registry.js";
+import { requireConfirm } from "../shared/guards.js";
 import { output, renderFields } from "../shared/responses.js";
 import { confirmShape, documentIdShape } from "../shared/schemas.js";
-import { requireConfirm } from "../shared/guards.js";
 
 export const documentUpdateTool = defineTool({
   name: "document_update",
@@ -45,7 +45,10 @@ export const documentUpdateTool = defineTool({
       .optional()
       .describe("Replace the tag set entirely with these tag ids."),
     add_tags: z.array(z.number().int()).optional().describe("Tag ids to add, keeping the rest."),
-    remove_tags: z.array(z.number().int()).optional().describe("Tag ids to remove, keeping the rest."),
+    remove_tags: z
+      .array(z.number().int())
+      .optional()
+      .describe("Tag ids to remove, keeping the rest."),
     archive_serial_number: z
       .number()
       .int()
@@ -54,7 +57,12 @@ export const documentUpdateTool = defineTool({
       .describe("Archive serial number, or null to clear. Use document_next_asn to pick one."),
     owner: z.number().int().nullable().optional().describe("Owning user id, or null for unowned."),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   handler: async (
     args: {
       id: number;
@@ -129,7 +137,12 @@ export const documentDeleteTool = defineTool({
     "Move one document to the paperless trash. It is recoverable until the trash is emptied or its retention window passes. Requires confirm=true; show the user the document's title first.",
   toolset: "core",
   inputSchema: { ...documentIdShape, ...confirmShape },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   handler: async (args: { id: number; confirm?: boolean }, context) => {
     const document = await context.api.documents.getOne(args.id, { fields: ["id", "title"] });
     requireConfirm(
@@ -165,10 +178,16 @@ export const documentUploadTool = defineTool({
     filename: z
       .string()
       .optional()
-      .describe("Filename with extension. Required with content_base64; derived from file_path otherwise."),
+      .describe(
+        "Filename with extension. Required with content_base64; derived from file_path otherwise.",
+      ),
     title: z.string().optional().describe("Title to assign instead of the filename."),
     created: z.string().optional().describe("Document date as YYYY-MM-DD."),
-    correspondent: z.number().int().optional().describe("Correspondent id to assign on consumption."),
+    correspondent: z
+      .number()
+      .int()
+      .optional()
+      .describe("Correspondent id to assign on consumption."),
     document_type: z.number().int().optional().describe("Document type id to assign."),
     storage_path: z.number().int().optional().describe("Storage path id to file it under."),
     tags: z.array(z.number().int()).optional().describe("Tag ids to apply."),
@@ -178,7 +197,12 @@ export const documentUploadTool = defineTool({
       .optional()
       .describe("Custom field ids to attach, or an object mapping field id to value."),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   aliases: ["post_document"],
   handler: async (
     args: {

@@ -23,9 +23,17 @@ export const documentVersionUploadTool = defineTool({
     ...documentIdShape,
     file_path: z.string().describe("Absolute path to the replacement file on this machine."),
     filename: z.string().optional().describe("Override the filename sent to paperless."),
-    label: z.string().optional().describe("Human-readable label for this version, e.g. 'signed copy'."),
+    label: z
+      .string()
+      .optional()
+      .describe("Human-readable label for this version, e.g. 'signed copy'."),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   handler: async (
     args: { id: number; file_path: string; filename?: string; label?: string },
     context,
@@ -64,14 +72,22 @@ export const documentVersionLabelTool = defineTool({
     version_id: z.number().int().describe("Version id to relabel."),
     label: z.string().describe("New label."),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   handler: async (args: { id: number; version_id: number; label: string }, context) => {
     const result = await context.api.documents.updateVersionLabel(
       args.id,
       args.version_id,
       args.label,
     );
-    return output(`Renamed version ${args.version_id} of document ${args.id} to "${args.label}".`, result);
+    return output(
+      `Renamed version ${args.version_id} of document ${args.id} to "${args.label}".`,
+      result,
+    );
   },
 });
 
@@ -87,7 +103,12 @@ export const documentVersionDeleteTool = defineTool({
     version_id: z.number().int().describe("Version id to delete."),
     ...confirmShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   handler: async (args: { id: number; version_id: number; confirm?: boolean }, context) => {
     requireConfirm(
       args.confirm,

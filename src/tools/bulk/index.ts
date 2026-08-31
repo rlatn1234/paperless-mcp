@@ -8,14 +8,14 @@ import {
   type BulkObjectType,
 } from "../../paperless/resources/bulk.js";
 import { nameOf } from "../../paperless/taxonomyCache.js";
-import { defineTool, type AnyToolDefinition } from "../registry.js";
+import { type AnyToolDefinition, defineTool } from "../registry.js";
 import { limitDestructive, requireConfirm, requireNonEmpty } from "../shared/guards.js";
 import { output, renderTable } from "../shared/responses.js";
 import {
   buildSetPermissions,
   confirmShape,
-  permissionsShape,
   type PermissionsInput,
+  permissionsShape,
 } from "../shared/schemas.js";
 
 /** Methods that destroy data rather than just re-labelling it. */
@@ -85,11 +85,13 @@ function buildParameters(args: BulkEditArgs): Record<string, unknown> {
       if (args.metadata_document_id !== undefined) {
         parameters["metadata_document_id"] = args.metadata_document_id;
       }
-      if (args.delete_originals !== undefined) parameters["delete_originals"] = args.delete_originals;
+      if (args.delete_originals !== undefined)
+        parameters["delete_originals"] = args.delete_originals;
       break;
     case "split":
       if (args.pages !== undefined) parameters["pages"] = args.pages;
-      if (args.delete_originals !== undefined) parameters["delete_originals"] = args.delete_originals;
+      if (args.delete_originals !== undefined)
+        parameters["delete_originals"] = args.delete_originals;
       break;
     case "rotate":
       if (args.degrees === undefined) {
@@ -144,7 +146,10 @@ export const documentsBulkEditTool = defineTool({
     add_tags: z.array(z.number().int()).optional().describe("For modify_tags."),
     remove_tags: z.array(z.number().int()).optional().describe("For modify_tags."),
     add_custom_fields: z.array(z.number().int()).optional().describe("For modify_custom_fields."),
-    remove_custom_fields: z.array(z.number().int()).optional().describe("For modify_custom_fields."),
+    remove_custom_fields: z
+      .array(z.number().int())
+      .optional()
+      .describe("For modify_custom_fields."),
     metadata_document_id: z
       .number()
       .int()
@@ -168,7 +173,12 @@ export const documentsBulkEditTool = defineTool({
       .describe("Report what the selection contains and stop, without changing anything."),
     ...confirmShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   aliases: ["bulk_edit_documents"],
   handler: async (args: BulkEditArgs, context) => {
     requireNonEmpty(args.documents, "document ids");
@@ -219,10 +229,7 @@ export const documentsBulkEditTool = defineTool({
 
     const parameters = buildParameters(args);
     const result = await context.api.bulk.editDocuments(args.documents, args.method, parameters);
-    return output(
-      `Applied "${args.method}" to ${args.documents.length} document(s).`,
-      result,
-    );
+    return output(`Applied "${args.method}" to ${args.documents.length} document(s).`, result);
   },
 });
 
@@ -241,9 +248,7 @@ export const objectsBulkEditTool = defineTool({
     "Delete several tags, correspondents, document types or storage paths at once, or set their permissions in one call. Deletion strips the object from every document that uses it and cannot be undone.",
   toolset: "bulk",
   inputSchema: {
-    object_type: z
-      .enum(BULK_OBJECT_TYPES)
-      .describe("Which kind of object the ids refer to."),
+    object_type: z.enum(BULK_OBJECT_TYPES).describe("Which kind of object the ids refer to."),
     ids: z.array(z.number().int()).min(1).describe("Object ids, from the matching list tool."),
     operation: z
       .enum(["set_permissions", "delete"])
@@ -255,7 +260,12 @@ export const objectsBulkEditTool = defineTool({
     ...permissionsShape,
     ...confirmShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   aliases: ["bulk_edit_tags", "bulk_edit_correspondents", "bulk_edit_document_types"],
   handler: async (args: BulkObjectArgs, context) => {
     requireNonEmpty(args.ids, "object ids");
@@ -283,10 +293,7 @@ export const objectsBulkEditTool = defineTool({
     );
     if (args.operation === "delete") context.taxonomy.invalidate();
 
-    return output(
-      `Ran "${args.operation}" on ${args.ids.length} ${args.object_type}.`,
-      result,
-    );
+    return output(`Ran "${args.operation}" on ${args.ids.length} ${args.object_type}.`, result);
   },
 });
 

@@ -79,7 +79,10 @@ describe("selectTools", () => {
   });
 
   it("hides tools whose toolset is not enabled", () => {
-    const summary = selectTools(demo, contextWith({ config: testConfig({ toolsets: ["search"] }) }));
+    const summary = selectTools(
+      demo,
+      contextWith({ config: testConfig({ toolsets: ["search"] }) }),
+    );
     expect(summary.registered).toEqual([]);
   });
 

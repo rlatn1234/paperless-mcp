@@ -53,7 +53,13 @@ export interface ResolvedConfig {
   retries: number;
   /** Pin the negotiated API version instead of probing for it. */
   apiVersion: number | undefined;
-  /** Keep the upstream (nloui/paperless-mcp) tool names as aliases. */
+  /**
+   * Register the upstream (nloui/paperless-mcp) tool names as aliases.
+   *
+   * Off by default: an alias duplicates the whole input schema in `tools/list`,
+   * and the schema is the expensive part — the aliases alone cost more than
+   * every real tool's description put together. Migrators can switch them on.
+   */
   legacyToolNames: boolean;
   /**
    * Also emit `structuredContent` alongside the rendered text.
@@ -94,7 +100,7 @@ export function normalizeBaseUrl(raw: string): string {
 }
 
 export function parseToolsets(raw: string | undefined): readonly Toolset[] {
-  if (!raw || !raw.trim()) return DEFAULT_TOOLSETS;
+  if (!raw?.trim()) return DEFAULT_TOOLSETS;
   const requested = raw
     .split(",")
     .map((part) => part.trim().toLowerCase())
@@ -196,7 +202,7 @@ Environment:
   PAPERLESS_API_VERSION   pin the API version instead of probing
   PAPERLESS_MAX_DESTRUCTIVE  max objects a destructive bulk call may touch
   PAPERLESS_TIMEOUT_MS    per-request timeout (default 30000)
-  PAPERLESS_LEGACY_TOOL_NAMES=0  drop the upstream tool-name aliases
+  PAPERLESS_LEGACY_TOOL_NAMES=1  also expose the upstream tool names as aliases
 `;
 
 export function resolveConfig(argv: readonly string[], env: NodeJS.ProcessEnv): ResolvedConfig {
@@ -207,9 +213,7 @@ export function resolveConfig(argv: readonly string[], env: NodeJS.ProcessEnv): 
     cli.positional[1] ?? env["PAPERLESS_API_KEY"] ?? env["PAPERLESS_TOKEN"] ?? env["API_KEY"];
 
   if (!rawBaseUrl || !token) {
-    throw new ConfigError(
-      `Missing paperless-ngx URL and/or API token.\n\n${USAGE}`,
-    );
+    throw new ConfigError(`Missing paperless-ngx URL and/or API token.\n\n${USAGE}`);
   }
 
   const modeResult = modeSchema.safeParse(env["PAPERLESS_MODE"] ?? "write");
@@ -232,7 +236,9 @@ export function resolveConfig(argv: readonly string[], env: NodeJS.ProcessEnv): 
   if (apiVersionRaw !== undefined && apiVersionRaw.trim() !== "") {
     const parsed = Number(apiVersionRaw);
     if (!Number.isInteger(parsed) || parsed < 1) {
-      throw new ConfigError(`PAPERLESS_API_VERSION must be a positive integer, got "${apiVersionRaw}".`);
+      throw new ConfigError(
+        `PAPERLESS_API_VERSION must be a positive integer, got "${apiVersionRaw}".`,
+      );
     }
     apiVersion = parsed;
   }
@@ -254,15 +260,23 @@ export function resolveConfig(argv: readonly string[], env: NodeJS.ProcessEnv): 
     mode: modeResult.data,
     logLevel: levelResult.data,
     downloadDir: downloadDir ? downloadDir : undefined,
-    maxResponseChars: intFromEnv(env["PAPERLESS_MAX_RESPONSE_CHARS"], 8000, "PAPERLESS_MAX_RESPONSE_CHARS"),
+    maxResponseChars: intFromEnv(
+      env["PAPERLESS_MAX_RESPONSE_CHARS"],
+      8000,
+      "PAPERLESS_MAX_RESPONSE_CHARS",
+    ),
     defaultPageSize,
     maxPageSize,
     maxDestructive: intFromEnv(env["PAPERLESS_MAX_DESTRUCTIVE"], 50, "PAPERLESS_MAX_DESTRUCTIVE"),
     requestTimeoutMs: intFromEnv(env["PAPERLESS_TIMEOUT_MS"], 30_000, "PAPERLESS_TIMEOUT_MS"),
-    uploadTimeoutMs: intFromEnv(env["PAPERLESS_UPLOAD_TIMEOUT_MS"], 300_000, "PAPERLESS_UPLOAD_TIMEOUT_MS"),
+    uploadTimeoutMs: intFromEnv(
+      env["PAPERLESS_UPLOAD_TIMEOUT_MS"],
+      300_000,
+      "PAPERLESS_UPLOAD_TIMEOUT_MS",
+    ),
     retries: intFromEnv(env["PAPERLESS_RETRIES"], 3, "PAPERLESS_RETRIES"),
     apiVersion,
-    legacyToolNames: boolFromEnv(env["PAPERLESS_LEGACY_TOOL_NAMES"], true),
+    legacyToolNames: boolFromEnv(env["PAPERLESS_LEGACY_TOOL_NAMES"], false),
     structuredOutput: boolFromEnv(env["PAPERLESS_STRUCTURED_OUTPUT"], false),
   };
 }

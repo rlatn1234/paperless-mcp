@@ -18,7 +18,7 @@ export function testConfig(overrides: Partial<ResolvedConfig> = {}): ResolvedCon
     uploadTimeoutMs: 5000,
     retries: 0,
     apiVersion: undefined,
-    legacyToolNames: true,
+    legacyToolNames: false,
     structuredOutput: false,
     ...overrides,
   };

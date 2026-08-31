@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PaperlessError } from "../../src/paperless/errors.js";
-import { PaperlessHttp, buildQuery, normalizePath } from "../../src/paperless/http.js";
+import { buildQuery, normalizePath, PaperlessHttp } from "../../src/paperless/http.js";
 import { silentLogger } from "../../src/runtime/logger.js";
 
 function client(overrides: Partial<ConstructorParameters<typeof PaperlessHttp>[0]> = {}) {
@@ -69,7 +69,10 @@ describe("PaperlessHttp", () => {
   });
 
   it("returns undefined for 204 rather than failing to parse", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 204 })),
+    );
     await expect(client().json("/tags/1/", { method: "DELETE" })).resolves.toBeUndefined();
   });
 
@@ -100,7 +103,9 @@ describe("PaperlessHttp", () => {
   it("explains a rejected token", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response(JSON.stringify({ detail: "Invalid token." }), { status: 401 })),
+      vi.fn(
+        async () => new Response(JSON.stringify({ detail: "Invalid token." }), { status: 401 }),
+      ),
     );
 
     const error = (await client()

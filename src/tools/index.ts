@@ -1,4 +1,3 @@
-import type { AnyToolDefinition } from "./registry.js";
 import { bulkTools } from "./bulk/index.js";
 import {
   documentGetTool,
@@ -12,11 +11,7 @@ import {
   documentPreviewTool,
   documentThumbnailTool,
 } from "./documents/files.js";
-import {
-  documentDeleteTool,
-  documentUpdateTool,
-  documentUploadTool,
-} from "./documents/mutate.js";
+import { documentDeleteTool, documentUpdateTool, documentUploadTool } from "./documents/mutate.js";
 import {
   documentNoteAddTool,
   documentNoteDeleteTool,
@@ -28,6 +23,7 @@ import {
   documentVersionLabelTool,
   documentVersionUploadTool,
 } from "./documents/versions.js";
+import type { AnyToolDefinition } from "./registry.js";
 import { taxonomyTools } from "./taxonomy/index.js";
 
 export const documentTools: AnyToolDefinition[] = [

@@ -34,11 +34,7 @@ function safeName(name: string): string {
   return name.replace(/[/\\]/g, "_").replace(/^\.+/, "_") || "document";
 }
 
-async function saveToDisk(
-  context: ToolContext,
-  bytes: Uint8Array,
-  name: string,
-): Promise<string> {
+async function saveToDisk(context: ToolContext, bytes: Uint8Array, name: string): Promise<string> {
   const directory = context.config.downloadDir
     ? resolve(context.config.downloadDir)
     : join(tmpdir(), "paperless-mcp");
@@ -64,7 +60,9 @@ export const documentDownloadTool = defineTool({
     as_base64: z
       .boolean()
       .optional()
-      .describe("Return the bytes inline as base64 instead of a path. Only for small files (<5 MB)."),
+      .describe(
+        "Return the bytes inline as base64 instead of a path. Only for small files (<5 MB).",
+      ),
   },
   annotations: { readOnlyHint: true, openWorldHint: true },
   aliases: ["download_document"],
@@ -89,10 +87,11 @@ export const documentDownloadTool = defineTool({
           hint: "Call again without as_base64 to write it to disk and get a path instead.",
         });
       }
-      return output(
-        `${name} (${formatBytes(bytes.byteLength)}, ${mimeType}), base64 follows.`,
-        { filename: name, mimeType, base64: Buffer.from(bytes).toString("base64") },
-      );
+      return output(`${name} (${formatBytes(bytes.byteLength)}, ${mimeType}), base64 follows.`, {
+        filename: name,
+        mimeType,
+        base64: Buffer.from(bytes).toString("base64"),
+      });
     }
 
     const path = await saveToDisk(context, bytes, name);

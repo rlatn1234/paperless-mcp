@@ -1,5 +1,5 @@
 import type { PaperlessHttp, QueryParams } from "../http.js";
-import { autoPaginate, type AutoPaginateResult } from "../pagination.js";
+import { type AutoPaginateResult, autoPaginate } from "../pagination.js";
 import type { Paginated } from "../types.js";
 
 /**

@@ -8,14 +8,12 @@ export interface RecordedRequest {
   headers: Headers;
 }
 
-export interface RouteHandler {
-  (request: RecordedRequest): {
-    status?: number;
-    json?: unknown;
-    body?: string;
-    headers?: Record<string, string>;
-  };
-}
+export type RouteHandler = (request: RecordedRequest) => {
+  status?: number;
+  json?: unknown;
+  body?: string;
+  headers?: Record<string, string>;
+};
 
 const DEFAULT_HEADERS = {
   "x-api-version": "10",
@@ -69,7 +67,9 @@ export function installFakePaperless(overrides: Record<string, RouteHandler> = {
   const requests: RecordedRequest[] = [];
 
   const routes: Record<string, RouteHandler> = {
-    "GET /api/ui_settings/": () => ({ json: { user: { id: 1, username: "tester" }, settings: {} } }),
+    "GET /api/ui_settings/": () => ({
+      json: { user: { id: 1, username: "tester" }, settings: {} },
+    }),
     "GET /api/tags/": () => ({ json: paginated(FIXTURES.tags) }),
     "GET /api/correspondents/": () => ({ json: paginated(FIXTURES.correspondents) }),
     "GET /api/document_types/": () => ({ json: paginated(FIXTURES.documentTypes) }),

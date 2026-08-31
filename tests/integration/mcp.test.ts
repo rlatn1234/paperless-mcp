@@ -2,10 +2,9 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { afterEach, describe, expect, it } from "vitest";
-
+import type { ResolvedConfig } from "../../src/config/schema.js";
 import { createSession } from "../../src/runtime/createServer.js";
 import { silentLogger } from "../../src/runtime/logger.js";
-import type { ResolvedConfig } from "../../src/config/schema.js";
 import { testConfig } from "../helpers/config.js";
 import { installFakePaperless, type RecordedRequest } from "../helpers/fakePaperless.js";
 
@@ -50,19 +49,21 @@ describe("MCP surface", () => {
     expect(names).toContain("document_get");
     expect(names).toContain("tag_list");
     expect(names).toContain("documents_bulk_edit");
-    // Upstream names stay callable while the aliases are enabled.
-    expect(names).toContain("search_documents");
+    // Aliases are opt-in: each one duplicates a full input schema in the
+    // listing, which is the expensive part of the tool budget.
+    expect(names).not.toContain("search_documents");
   });
 
-  it("drops the aliases when legacy names are disabled", async () => {
+  it("exposes the upstream names when legacy aliases are enabled", async () => {
     const fake = installFakePaperless();
     cleanup.push(fake.restore);
 
-    const { client } = await connect(testConfig({ legacyToolNames: false }));
+    const { client } = await connect(testConfig({ legacyToolNames: true }));
     const names = (await client.listTools()).tools.map((tool) => tool.name);
 
     expect(names).toContain("document_search");
-    expect(names).not.toContain("search_documents");
+    expect(names).toContain("search_documents");
+    expect(names).toContain("bulk_edit_tags");
   });
 
   it("returns tool output as text content, not an empty result", async () => {

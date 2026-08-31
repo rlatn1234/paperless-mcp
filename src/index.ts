@@ -1,8 +1,8 @@
-import { ConfigError, USAGE, resolveConfig } from "./config/schema.js";
+import { ConfigError, resolveConfig, USAGE } from "./config/schema.js";
 import { PaperlessError } from "./paperless/errors.js";
+import { startHttp } from "./runtime/http.js";
 import { createLogger } from "./runtime/logger.js";
 import { endProcess } from "./runtime/shutdown.js";
-import { startHttp } from "./runtime/http.js";
 import { startStdio } from "./runtime/stdio.js";
 import { SERVER_VERSION } from "./version.js";
 
@@ -43,7 +43,9 @@ main().catch((error: unknown) => {
   } else if (error instanceof PaperlessError) {
     process.stderr.write(`${error.toToolText()}\n`);
   } else {
-    process.stderr.write(`${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`);
+    process.stderr.write(
+      `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+    );
   }
   endProcess(1);
 });

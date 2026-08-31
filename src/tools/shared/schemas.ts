@@ -15,7 +15,9 @@ export const confirmShape = {
   confirm: z
     .boolean()
     .optional()
-    .describe("Must be true to actually perform this irreversible action. Tell the user what will be affected first."),
+    .describe(
+      "Must be true to actually perform this irreversible action. Tell the user what will be affected first.",
+    ),
 } as const;
 
 export const documentIdShape = {
@@ -38,7 +40,10 @@ export const MATCHING_ALGORITHMS = {
 } as const;
 
 export const matchingAlgorithmSchema = z
-  .union([z.enum(["any", "all", "literal", "regex", "fuzzy", "auto"]), z.number().int().min(0).max(6)])
+  .union([
+    z.enum(["any", "all", "literal", "regex", "fuzzy", "auto"]),
+    z.number().int().min(0).max(6),
+  ])
   .optional()
   .describe(
     "How `match` is applied: any (any word), all (all words), literal (exact phrase), regex, fuzzy, auto (learned). Numeric 0/1/2/3/4/6 also accepted.",
@@ -60,7 +65,12 @@ export const matchingShape = {
 } as const;
 
 export const permissionsShape = {
-  owner: z.number().int().nullable().optional().describe("User id to own the object, or null for none."),
+  owner: z
+    .number()
+    .int()
+    .nullable()
+    .optional()
+    .describe("User id to own the object, or null for none."),
   view_users: z.array(z.number().int()).optional().describe("User ids granted view access."),
   view_groups: z.array(z.number().int()).optional().describe("Group ids granted view access."),
   change_users: z.array(z.number().int()).optional().describe("User ids granted edit access."),
@@ -77,8 +87,7 @@ export interface PermissionsInput {
 
 /** Builds the `set_permissions` object paperless expects, or undefined if unset. */
 export function buildSetPermissions(input: PermissionsInput): Record<string, unknown> | undefined {
-  const hasAny =
-    input.view_users || input.view_groups || input.change_users || input.change_groups;
+  const hasAny = input.view_users || input.view_groups || input.change_users || input.change_groups;
   if (!hasAny) return undefined;
   return {
     view: { users: input.view_users ?? [], groups: input.view_groups ?? [] },

@@ -2,12 +2,7 @@ import { z } from "zod";
 
 import { nameOf, namesOf } from "../../paperless/taxonomyCache.js";
 import { defineTool } from "../registry.js";
-import {
-  formatBytes,
-  output,
-  renderFields,
-  renderTable,
-} from "../shared/responses.js";
+import { formatBytes, output, renderFields, renderTable } from "../shared/responses.js";
 import { documentIdShape } from "../shared/schemas.js";
 
 export const documentGetTool = defineTool({
@@ -21,7 +16,9 @@ export const documentGetTool = defineTool({
     include_content: z
       .boolean()
       .optional()
-      .describe("Include the OCR'd body text (default true). Set false when you only need metadata."),
+      .describe(
+        "Include the OCR'd body text (default true). Set false when you only need metadata.",
+      ),
     full_permissions: z
       .boolean()
       .optional()
@@ -109,7 +106,8 @@ export const documentMetadataTool = defineTool({
       media_filename: metadata.media_filename,
       original_filename: metadata.original_filename,
       original_mime_type: metadata.original_mime_type,
-      original_size: metadata.original_size === undefined ? undefined : formatBytes(metadata.original_size),
+      original_size:
+        metadata.original_size === undefined ? undefined : formatBytes(metadata.original_size),
       original_checksum: metadata.original_checksum,
       has_archive_version: metadata.has_archive_version,
       archive_size:

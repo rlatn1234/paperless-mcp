@@ -1,10 +1,9 @@
 import { z } from "zod";
-
+import type { DocumentNote } from "../../paperless/types.js";
 import { defineTool } from "../registry.js";
 import { requireConfirm } from "../shared/guards.js";
 import { output, renderTable } from "../shared/responses.js";
 import { confirmShape, documentIdShape } from "../shared/schemas.js";
-import type { DocumentNote } from "../../paperless/types.js";
 
 function renderNotes(notes: DocumentNote[]): string {
   return renderTable(
@@ -43,7 +42,12 @@ export const documentNoteAddTool = defineTool({
     ...documentIdShape,
     note: z.string().min(1).describe("Note text to attach."),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   handler: async (args: { id: number; note: string }, context) => {
     const notes = await context.api.documents.addNote(args.id, args.note);
     return output(`Added a note to document ${args.id}.\n\n${renderNotes(notes)}`, notes);
@@ -61,7 +65,12 @@ export const documentNoteDeleteTool = defineTool({
     note_id: z.number().int().describe("Note id from document_notes_list."),
     ...confirmShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   handler: async (args: { id: number; note_id: number; confirm?: boolean }, context) => {
     requireConfirm(
       args.confirm,

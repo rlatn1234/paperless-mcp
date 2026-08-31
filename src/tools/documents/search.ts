@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 import {
+  type DocumentFilter,
   documentFilterShape,
   documentFilterToQuery,
   documentOrderingSchema,
-  type DocumentFilter,
 } from "../../paperless/filters.js";
 import { pageInfo } from "../../paperless/pagination.js";
 import { DEFAULT_DOCUMENT_FIELDS } from "../../paperless/resources/documents.js";

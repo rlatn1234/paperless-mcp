@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   ConfigError,
   DEFAULT_TOOLSETS,
-  TOOLSETS,
   normalizeBaseUrl,
   parseCliArgs,
   parseToolsets,
   resolveConfig,
+  TOOLSETS,
 } from "../../src/config/schema.js";
 
 describe("normalizeBaseUrl", () => {
@@ -16,11 +16,15 @@ describe("normalizeBaseUrl", () => {
   });
 
   it("strips trailing slashes", () => {
-    expect(normalizeBaseUrl("https://paperless.example.com///")).toBe("https://paperless.example.com");
+    expect(normalizeBaseUrl("https://paperless.example.com///")).toBe(
+      "https://paperless.example.com",
+    );
   });
 
   it("strips an accidental /api suffix so paths are not doubled", () => {
-    expect(normalizeBaseUrl("https://paperless.example.com/api/")).toBe("https://paperless.example.com");
+    expect(normalizeBaseUrl("https://paperless.example.com/api/")).toBe(
+      "https://paperless.example.com",
+    );
   });
 
   it("preserves a sub-path deployment", () => {

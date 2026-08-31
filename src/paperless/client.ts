@@ -1,5 +1,5 @@
-import type { Logger } from "../runtime/logger.js";
 import type { ResolvedConfig } from "../config/schema.js";
+import type { Logger } from "../runtime/logger.js";
 import { PaperlessHttp } from "./http.js";
 import { BulkResource } from "./resources/bulk.js";
 import { CrudResource } from "./resources/crud.js";

@@ -17,7 +17,9 @@ export const documentFilterShape = {
   content_contains: z
     .string()
     .optional()
-    .describe("Case-insensitive substring match on the OCR'd body text. For ranked full-text search use the `query` parameter instead."),
+    .describe(
+      "Case-insensitive substring match on the OCR'd body text. For ranked full-text search use the `query` parameter instead.",
+    ),
   correspondent_ids: z
     .array(z.number().int())
     .optional()
@@ -45,28 +47,17 @@ export const documentFilterShape = {
   is_tagged: z
     .boolean()
     .optional()
-    .describe("false returns untagged documents only — the usual way to find an unprocessed inbox."),
-  created_after: z
-    .string()
-    .optional()
-    .describe("Document date on or after this YYYY-MM-DD."),
-  created_before: z
-    .string()
-    .optional()
-    .describe("Document date on or before this YYYY-MM-DD."),
-  added_after: z
-    .string()
-    .optional()
-    .describe("Consumed by paperless on or after this YYYY-MM-DD."),
+    .describe(
+      "false returns untagged documents only — the usual way to find an unprocessed inbox.",
+    ),
+  created_after: z.string().optional().describe("Document date on or after this YYYY-MM-DD."),
+  created_before: z.string().optional().describe("Document date on or before this YYYY-MM-DD."),
+  added_after: z.string().optional().describe("Consumed by paperless on or after this YYYY-MM-DD."),
   added_before: z
     .string()
     .optional()
     .describe("Consumed by paperless on or before this YYYY-MM-DD."),
-  archive_serial_number: z
-    .number()
-    .int()
-    .optional()
-    .describe("Exact archive serial number (ASN)."),
+  archive_serial_number: z.number().int().optional().describe("Exact archive serial number (ASN)."),
   has_archive_serial_number: z
     .boolean()
     .optional()
@@ -156,7 +147,10 @@ export const nameFilterShape = {
   name_exact: z.string().optional().describe("Exact (case-insensitive) name match."),
 } as const;
 
-export function nameFilterToQuery(filter: { name_contains?: string; name_exact?: string }): QueryParams {
+export function nameFilterToQuery(filter: {
+  name_contains?: string;
+  name_exact?: string;
+}): QueryParams {
   const query: QueryParams = {};
   if (filter.name_contains) query["name__icontains"] = filter.name_contains;
   if (filter.name_exact) query["name__iexact"] = filter.name_exact;

@@ -11,10 +11,11 @@
  * Prints result sizes and timings, never document contents — the point is to
  * prove the wiring works, not to dump someone's archive into a terminal.
  */
+
+import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { fileURLToPath } from "node:url";
 
 const baseUrl = process.env["PAPERLESS_URL"];
 const token = process.env["PAPERLESS_API_KEY"] ?? process.env["API_KEY"];

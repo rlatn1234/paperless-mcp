@@ -6,7 +6,7 @@ import type { Toolset } from "../config/schema.js";
 import type { Capabilities } from "../paperless/capabilities.js";
 import { toPaperlessError } from "../paperless/errors.js";
 import type { ToolContext } from "../runtime/context.js";
-import { truncateText, type ToolOutput } from "./shared/responses.js";
+import { type ToolOutput, truncateText } from "./shared/responses.js";
 
 export interface ToolDefinition<Shape extends ZodRawShape = ZodRawShape> {
   name: string;
@@ -27,7 +27,7 @@ export interface ToolDefinition<Shape extends ZodRawShape = ZodRawShape> {
 
 // The shape varies per tool; the registry only ever passes args straight
 // through to the handler that declared them.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: heterogeneous tool schemas
 export type AnyToolDefinition = ToolDefinition<any>;
 
 export function defineTool<Shape extends ZodRawShape>(

@@ -201,7 +201,7 @@ export class PaperlessHttp {
     if (!text) return undefined as T;
     try {
       return JSON.parse(text) as T;
-    } catch (cause) {
+    } catch {
       throw httpError(
         response.status,
         `Expected JSON but got: ${text.slice(0, 200)}`,

@@ -5,7 +5,11 @@ import { probeCapabilities } from "../paperless/capabilities.js";
 import { PaperlessClient } from "../paperless/client.js";
 import { TaxonomyCache } from "../paperless/taxonomyCache.js";
 import { allTools } from "../tools/index.js";
-import { registerTools, type AnyToolDefinition, type RegistrationSummary } from "../tools/registry.js";
+import {
+  type AnyToolDefinition,
+  type RegistrationSummary,
+  registerTools,
+} from "../tools/registry.js";
 import { SERVER_NAME, SERVER_VERSION } from "../version.js";
 import type { ToolContext } from "./context.js";
 import type { Logger } from "./logger.js";

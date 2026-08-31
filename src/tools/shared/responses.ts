@@ -77,9 +77,7 @@ export function renderPageFooter(summary: PageSummary, toolName: string): string
   }
   const from = (summary.page - 1) * summary.pageSize + 1;
   const to = Math.min(summary.page * summary.pageSize, summary.count);
-  const more = summary.hasNext
-    ? ` Call ${toolName} with page=${summary.page + 1} for more.`
-    : "";
+  const more = summary.hasNext ? ` Call ${toolName} with page=${summary.page + 1} for more.` : "";
   return `Showing ${from}–${to} of ${summary.count} (page ${summary.page}/${summary.totalPages}).${more}`;
 }
 

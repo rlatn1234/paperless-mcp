@@ -16,7 +16,8 @@ const LEVEL_VALUE: Record<LogLevel, number> = {
 };
 
 /** Keys whose values must never reach a log line. */
-const SECRET_KEY = /^(authorization|token|api[_-]?key|password|secret|cookie|set-cookie|refresh_token|access_token)$/i;
+const SECRET_KEY =
+  /^(authorization|token|api[_-]?key|password|secret|cookie|set-cookie|refresh_token|access_token)$/i;
 
 const REDACTED = "[redacted]";
 
@@ -61,7 +62,10 @@ function write(
   process.stderr.write(`${JSON.stringify(line)}\n`);
 }
 
-export function createLogger(level: LogLevel = "info", bindings: Record<string, unknown> = {}): Logger {
+export function createLogger(
+  level: LogLevel = "info",
+  bindings: Record<string, unknown> = {},
+): Logger {
   const threshold = LEVEL_VALUE[level];
   return {
     level,

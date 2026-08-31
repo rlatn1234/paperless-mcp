@@ -25,7 +25,10 @@
     "inspect": "npm run build && npx -y @modelcontextprotocol/inspector node dist/index.js",
     "dev:paperless": "docker compose -f docker-compose.dev.yml up -d",
     "dev:paperless:down": "docker compose -f docker-compose.dev.yml down -v",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "gen:openapi": "tsx scripts/gen-openapi.ts",
+    "lint": "biome check src tests scripts",
+    "format": "biome check --write src tests scripts"
   },
   "keywords": [
     "mcp",
@@ -58,8 +61,10 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.11",
     "@types/express": "^5.0.0",
     "@types/node": "^22.15.17",
+    "openapi-typescript": "^7.13.0",
     "tsup": "^8.5.0",
     "tsx": "^4.20.0",
     "typescript": "^5.8.3",

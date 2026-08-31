@@ -5,7 +5,7 @@ import { pageInfo } from "../../paperless/pagination.js";
 import type { CrudResource } from "../../paperless/resources/crud.js";
 import type { Correspondent, DocumentType, Tag } from "../../paperless/types.js";
 import type { ToolContext } from "../../runtime/context.js";
-import { defineTool, type AnyToolDefinition } from "../registry.js";
+import { type AnyToolDefinition, defineTool } from "../registry.js";
 import { requireConfirm } from "../shared/guards.js";
 import { output, renderPageFooter, renderTable } from "../shared/responses.js";
 import {
@@ -103,7 +103,12 @@ export const tagCreateTool = defineTool({
       .describe("Mark as an inbox tag, applied to everything newly consumed."),
     ...matchingShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   aliases: ["create_tag"],
   handler: async (
     args: { name: string; color?: string; is_inbox_tag?: boolean } & MatchingArgs,
@@ -135,7 +140,12 @@ export const tagUpdateTool = defineTool({
     is_inbox_tag: z.boolean().optional().describe("Whether this is an inbox tag."),
     ...matchingShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   aliases: ["update_tag"],
   handler: async (
     args: { id: number; name?: string; color?: string; is_inbox_tag?: boolean } & MatchingArgs,
@@ -158,7 +168,12 @@ export const tagDeleteTool = defineTool({
     "Permanently delete a tag and strip it from every document that carries it. This cannot be undone and the documents themselves are untouched. Report the tag's document count to the user before calling with confirm=true.",
   toolset: "taxonomy",
   inputSchema: { id: z.number().int().describe("Tag id from tag_list."), ...confirmShape },
-  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
   aliases: ["delete_tag"],
   handler: async (args: { id: number; confirm?: boolean }, context) => {
     const tag = await context.api.tags.get(args.id);
@@ -183,16 +198,10 @@ export const correspondentListTool = defineTool({
   annotations: { readOnlyHint: true, openWorldHint: true },
   aliases: ["list_correspondents"],
   handler: (args: ListArgs, context) =>
-    listResource<Correspondent>(
-      context.api.correspondents,
-      args,
-      context,
-      "correspondent_list",
-      {
-        headers: ["last correspondence"],
-        cell: (item) => [item.last_correspondence?.slice(0, 10) ?? ""],
-      },
-    ),
+    listResource<Correspondent>(context.api.correspondents, args, context, "correspondent_list", {
+      headers: ["last correspondence"],
+      cell: (item) => [item.last_correspondence?.slice(0, 10) ?? ""],
+    }),
 });
 
 export const correspondentCreateTool = defineTool({
@@ -205,7 +214,12 @@ export const correspondentCreateTool = defineTool({
     name: z.string().min(1).describe("Correspondent name, e.g. 'Stadtwerke München'."),
     ...matchingShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   aliases: ["create_correspondent"],
   handler: async (args: { name: string } & MatchingArgs, context) => {
     const correspondent = await context.api.correspondents.create({
@@ -243,7 +257,12 @@ export const documentTypeCreateTool = defineTool({
     name: z.string().min(1).describe("Type name, e.g. 'Invoice'."),
     ...matchingShape,
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
   aliases: ["create_document_type"],
   handler: async (args: { name: string } & MatchingArgs, context) => {
     const documentType = await context.api.documentTypes.create({
