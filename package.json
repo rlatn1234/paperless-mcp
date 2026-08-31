@@ -1,25 +1,39 @@
 {
   "name": "@rlatn1234/paperless-mcp",
-  "version": "1.0.0",
-  "description": "Model Context Protocol (MCP) server for interacting with Paperless-NGX document management system. Enables AI assistants to manage documents, tags, correspondents, and document types through the Paperless-NGX API.",
-  "main": "src/index.js",
-  "bin": {
-    "paperless-mcp": "src/index.js"
+  "version": "0.1.0",
+  "description": "Model Context Protocol (MCP) server for paperless-ngx. Exposes the complete paperless-ngx REST API — documents, tags, correspondents, document types, storage paths, custom fields, bulk operations, workflows, mail rules and administration — to AI assistants.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
   },
+  "main": "./dist/index.js",
+  "bin": {
+    "paperless-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node src/index.ts",
-    "build": "tsc",
-    "inspect": "npm run build && npx -y @modelcontextprotocol/inspector node build/index.js"
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "inspect": "npm run build && npx -y @modelcontextprotocol/inspector node dist/index.js",
+    "dev:paperless": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:paperless:down": "docker compose -f docker-compose.dev.yml down -v"
   },
   "keywords": [
     "mcp",
     "paperless-ngx",
+    "paperless",
     "document-management",
     "ai",
     "claude",
-    "model-context-protocol",
-    "paperless"
+    "model-context-protocol"
   ],
   "author": "rlatn1234",
   "contributors": [
@@ -38,13 +52,16 @@
     "access": "public"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.11.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^5.1.0",
-    "typescript": "^5.8.3",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@types/node": "^22.15.17",
-    "ts-node": "^10.9.2"
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }

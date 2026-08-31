@@ -1,0 +1,114 @@
+import { vi } from "vitest";
+
+export interface RecordedRequest {
+  method: string;
+  path: string;
+  query: URLSearchParams;
+  body: unknown;
+  headers: Headers;
+}
+
+export interface RouteHandler {
+  (request: RecordedRequest): {
+    status?: number;
+    json?: unknown;
+    body?: string;
+    headers?: Record<string, string>;
+  };
+}
+
+const DEFAULT_HEADERS = {
+  "x-api-version": "10",
+  "x-version": "3.1.1",
+  "content-type": "application/json",
+};
+
+function paginated(results: unknown[]): unknown {
+  return { count: results.length, next: null, previous: null, results };
+}
+
+export const FIXTURES = {
+  tags: [
+    { id: 1, name: "Invoice", color: "#a6cee3", document_count: 12, is_inbox_tag: false },
+    { id: 2, name: "Paid", color: "#b2df8a", document_count: 5, is_inbox_tag: false },
+  ],
+  correspondents: [
+    { id: 10, name: "ACME Ltd", document_count: 7, last_correspondence: "2026-05-02T00:00:00Z" },
+  ],
+  documentTypes: [{ id: 20, name: "Invoice", document_count: 9 }],
+  storagePaths: [{ id: 30, name: "Archive", path: "archive/{created_year}", document_count: 3 }],
+  documents: [
+    {
+      id: 100,
+      title: "ACME invoice 2026-04",
+      created: "2026-04-01T00:00:00Z",
+      added: "2026-04-02T00:00:00Z",
+      correspondent: 10,
+      document_type: 20,
+      storage_path: null,
+      tags: [1, 2],
+      archive_serial_number: 41,
+      owner: null,
+      original_file_name: "acme-invoice.pdf",
+      content: "Invoice total 412.00 EUR, due 2026-05-01.",
+    },
+  ],
+};
+
+/**
+ * Minimal in-process stand-in for a paperless-ngx instance.
+ *
+ * Contract tests run against recorded response shapes rather than a live
+ * server, so the suite stays fast and hermetic; the docker-compose instance
+ * covers the real thing in end-to-end runs.
+ */
+export function installFakePaperless(overrides: Record<string, RouteHandler> = {}): {
+  requests: RecordedRequest[];
+  restore: () => void;
+} {
+  const requests: RecordedRequest[] = [];
+
+  const routes: Record<string, RouteHandler> = {
+    "GET /api/ui_settings/": () => ({ json: { user: { id: 1, username: "tester" }, settings: {} } }),
+    "GET /api/tags/": () => ({ json: paginated(FIXTURES.tags) }),
+    "GET /api/correspondents/": () => ({ json: paginated(FIXTURES.correspondents) }),
+    "GET /api/document_types/": () => ({ json: paginated(FIXTURES.documentTypes) }),
+    "GET /api/storage_paths/": () => ({ json: paginated(FIXTURES.storagePaths) }),
+    "GET /api/documents/": () => ({ json: paginated(FIXTURES.documents) }),
+    "GET /api/documents/100/": () => ({ json: FIXTURES.documents[0] }),
+    ...overrides,
+  };
+
+  const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    const method = (init?.method ?? "GET").toUpperCase();
+    const key = `${method} ${url.pathname}`;
+
+    const record: RecordedRequest = {
+      method,
+      path: url.pathname,
+      query: url.searchParams,
+      body: typeof init?.body === "string" ? JSON.parse(init.body) : init?.body,
+      headers: new Headers(init?.headers),
+    };
+    requests.push(record);
+
+    const handler = routes[key];
+    if (!handler) {
+      return new Response(JSON.stringify({ detail: `No route for ${key}` }), {
+        status: 404,
+        headers: DEFAULT_HEADERS,
+      });
+    }
+
+    const result = handler(record);
+    const body = result.json !== undefined ? JSON.stringify(result.json) : (result.body ?? "");
+    return new Response(body, {
+      status: result.status ?? 200,
+      headers: { ...DEFAULT_HEADERS, ...result.headers },
+    });
+  });
+
+  vi.stubGlobal("fetch", fetchMock);
+  return { requests, restore: () => vi.unstubAllGlobals() };
+}

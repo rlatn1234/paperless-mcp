@@ -1,0 +1,40 @@
+# Local paperless-ngx for development and end-to-end tests.
+#
+#   npm run dev:paperless          start it (http://localhost:8000, admin/admin)
+#   npm run dev:paperless:down     stop it and delete the volumes
+#
+# Generate an API token under My Profile once it is up, then:
+#   npm run dev -- http://localhost:8000 <token>
+services:
+  broker:
+    image: docker.io/library/redis:7
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - broker
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/usr/src/paperless/data
+      - media:/usr/src/paperless/media
+      - ./tests/fixtures/consume:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_URL: http://localhost:8000
+      PAPERLESS_TIME_ZONE: UTC
+      PAPERLESS_OCR_LANGUAGE: eng
+      # Development only — never use these settings for real documents.
+      PAPERLESS_ADMIN_USER: admin
+      PAPERLESS_ADMIN_PASSWORD: admin
+      PAPERLESS_AUDIT_LOG_ENABLED: "true"
+      PAPERLESS_DEBUG: "false"
+
+volumes:
+  data:
+  media:
+  redisdata:

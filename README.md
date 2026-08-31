@@ -1,349 +1,188 @@
-# Paperless-NGX MCP Server
+# paperless-mcp
 
-An MCP (Model Context Protocol) server for interacting with a Paperless-NGX API server. This server provides tools for managing documents, tags, correspondents, and document types in your Paperless-NGX instance.
+An MCP (Model Context Protocol) server for [paperless-ngx](https://docs.paperless-ngx.com/), aiming at **complete coverage of the paperless-ngx REST API**.
 
-## Quick Start
+A fork of [nloui/paperless-mcp](https://github.com/nloui/paperless-mcp), rebuilt around a typed API client, a gated tool registry, and output shaped to fit in a context window.
 
-### Installation
-1. Install the MCP server:
+> **Status: v0.1.0 — in progress.** Documents and the core taxonomy are done. Storage paths, custom fields, saved views, sharing, workflows, mail rules and administration are on the way.
+
+---
+
+## Install
+
 ```bash
 npm install -g @rlatn1234/paperless-mcp
 ```
 
-2. Add it to your Claude's MCP configuration:
+Get an API token from your paperless-ngx instance: click your username → **My Profile** → the circular arrow next to *API Auth Token*.
 
-For VSCode extension, edit `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`:
+### Claude Desktop / Cline / any stdio MCP client
+
 ```json
 {
   "mcpServers": {
     "paperless": {
       "command": "npx",
-      "args": ["@rlatn1234/paperless-mcp", "http://your-paperless-instance:8000", "your-api-token"]
+      "args": ["@rlatn1234/paperless-mcp", "https://paperless.example.com", "your-api-token"]
     }
   }
 }
 ```
 
-For Claude desktop app, edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Credentials can come from the environment instead, which keeps the token out of the config file:
+
 ```json
 {
   "mcpServers": {
     "paperless": {
       "command": "npx",
-      "args": ["@rlatn1234/paperless-mcp", "http://your-paperless-instance:8000", "your-api-token"]
+      "args": ["@rlatn1234/paperless-mcp"],
+      "env": {
+        "PAPERLESS_URL": "https://paperless.example.com",
+        "PAPERLESS_API_KEY": "your-api-token"
+      }
     }
   }
 }
 ```
 
-3. Get your API token:
-   1. Log into your Paperless-NGX instance
-   2. Click your username in the top right
-   3. Select "My Profile"
-   4. Click the circular arrow button to generate a new token
+### HTTP
 
-4. Replace the placeholders in your MCP config:
-   - `http://your-paperless-instance:8000` with your Paperless-NGX URL
-   - `your-api-token` with the token you just generated
-
-That's it! Now you can ask Claude to help you manage your Paperless-NGX documents.
-
-## Example Usage
-
-Here are some things you can ask Claude to do:
-
-- "Show me all documents tagged as 'Invoice'"
-- "Search for documents containing 'tax return'"
-- "Create a new tag called 'Receipts' with color #FF0000"
-- "Download document #123"
-- "List all correspondents"
-- "Create a new document type called 'Bank Statement'"
-
-## Available Tools
-
-### Document Operations
-
-#### list_documents
-Get a paginated list of all documents.
-
-Parameters:
-- page (optional): Page number
-- page_size (optional): Number of documents per page
-
-```typescript
-list_documents({
-  page: 1,
-  page_size: 25
-})
+```bash
+PAPERLESS_URL=https://paperless.example.com PAPERLESS_API_KEY=token \
+  paperless-mcp --http --port 3000
 ```
 
-#### get_document
-Get a specific document by ID.
+Serves Streamable HTTP at `POST /mcp`, plus `GET /healthz`. Each request gets its own server instance, so concurrent calls stay isolated. The deprecated HTTP+SSE transport from the upstream project has been removed.
 
-Parameters:
-- id: Document ID
+---
 
-```typescript
-get_document({
-  id: 123
-})
+## Toolsets
+
+paperless-ngx exposes well over a hundred API operations. Registering all of them would spend tens of thousands of tokens on tool definitions alone and make the model worse at picking the right one, so tools are grouped and opted into.
+
+```bash
+PAPERLESS_TOOLSETS=core,taxonomy,search,bulk    # default
+PAPERLESS_TOOLSETS=full                         # everything available
 ```
 
-#### search_documents
-Full-text search across documents.
+| Toolset | Contents |
+| --- | --- |
+| `core` | documents: search, read, update, delete, upload, notes, metadata, suggestions, history, files |
+| `taxonomy` | tags, correspondents, document types |
+| `search` | global search, autocomplete, statistics *(planned)* |
+| `bulk` | bulk document edits and bulk object operations |
+| `versions` | document version management (requires API v10) |
+| `views`, `sharing`, `workflows`, `mail`, `admin`, `ai` | *planned* |
 
-Parameters:
-- query: Search query string
+---
 
-```typescript
-search_documents({
-  query: "invoice 2024"
-})
-```
+## Configuration
 
-#### download_document
-Download a document file by ID.
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PAPERLESS_URL` | — | Instance base URL. A trailing `/api` or `/` is tolerated. |
+| `PAPERLESS_API_KEY` | — | API token (`API_KEY` and `PAPERLESS_TOKEN` also accepted). |
+| `PAPERLESS_TOOLSETS` | `core,taxonomy,search,bulk` | Which tool groups to expose, or `full`. |
+| `PAPERLESS_MODE` | `write` | `readonly` refuses to register any mutating tool; `admin` unlocks administration tools. |
+| `PAPERLESS_DOWNLOAD_DIR` | system temp dir | Where downloaded files are written. |
+| `PAPERLESS_MAX_DESTRUCTIVE` | `50` | Largest selection a destructive bulk call may touch. |
+| `PAPERLESS_MAX_RESPONSE_CHARS` | `8000` | Hard ceiling on a single tool result. |
+| `PAPERLESS_PAGE_SIZE` / `PAPERLESS_MAX_PAGE_SIZE` | `25` / `100` | List paging defaults. |
+| `PAPERLESS_TIMEOUT_MS` | `30000` | Per-request timeout (uploads get 300 s). |
+| `PAPERLESS_RETRIES` | `3` | Retries for 429 and 5xx on idempotent requests. |
+| `PAPERLESS_API_VERSION` | probed | Pin the API version instead of negotiating it. |
+| `PAPERLESS_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` \| `silent`. Logs go to stderr. |
+| `PAPERLESS_LEGACY_TOOL_NAMES` | `1` | Keep the upstream tool names working as aliases. |
+| `PAPERLESS_STRUCTURED_OUTPUT` | `0` | Also emit `structuredContent`. Off by default because most clients feed it to the model alongside the text, doubling token cost. |
 
-Parameters:
-- id: Document ID
-- original (optional): If true, downloads original file instead of archived version
+---
 
-```typescript
-download_document({
-  id: 123,
-  original: false
-})
-```
+## Tools
 
-#### bulk_edit_documents
-Perform bulk operations on multiple documents.
+### Documents (`core`)
 
-Parameters:
-- documents: Array of document IDs
-- method: One of:
-  - set_correspondent: Set correspondent for documents
-  - set_document_type: Set document type for documents
-  - set_storage_path: Set storage path for documents
-  - add_tag: Add a tag to documents
-  - remove_tag: Remove a tag from documents
-  - modify_tags: Add and/or remove multiple tags
-  - delete: Delete documents
-  - reprocess: Reprocess documents
-  - set_permissions: Set document permissions
-  - merge: Merge multiple documents
-  - split: Split a document into multiple documents
-  - rotate: Rotate document pages
-  - delete_pages: Delete specific pages from a document
-- Additional parameters based on method:
-  - correspondent: ID for set_correspondent
-  - document_type: ID for set_document_type
-  - storage_path: ID for set_storage_path
-  - tag: ID for add_tag/remove_tag
-  - add_tags: Array of tag IDs for modify_tags
-  - remove_tags: Array of tag IDs for modify_tags
-  - permissions: Object for set_permissions with owner, permissions, merge flag
-  - metadata_document_id: ID for merge to specify metadata source
-  - delete_originals: Boolean for merge/split
-  - pages: String for split "[1,2-3,4,5-7]" or delete_pages "[2,3,4]"
-  - degrees: Number for rotate (90, 180, or 270)
+| Tool | What it does |
+| --- | --- |
+| `document_search` | Full-text query and/or structured filters (tags, correspondent, type, dates, ASN, custom fields). Returns a compact table with names resolved, without OCR bodies. |
+| `document_similar` | More-like-this against a known document — duplicates, prior invoices, the rest of a series. |
+| `document_get` | Full detail for one document, including the OCR text. |
+| `document_update` | Change title, date, correspondent, type, storage path, tags (whole-set or add/remove), ASN, owner. |
+| `document_delete` | Move a document to the trash. Requires `confirm`. |
+| `document_upload` | Upload a file for consumption, by path or base64. |
+| `document_metadata` | Checksums, size, MIME type, archive version, embedded PDF metadata. |
+| `document_suggestions` | What paperless's classifier would assign. |
+| `document_history` | Audit trail of metadata changes. |
+| `document_next_asn` | Next free archive serial number. |
+| `document_notes_list` / `document_note_add` / `document_note_delete` | Notes on a document. |
+| `document_download` | Write the file to disk and return the path (base64 optionally, for small files). |
+| `document_thumbnail` / `document_preview` | Inline image, or a path for PDFs. |
 
-Examples:
-```typescript
-// Add a tag to multiple documents
-bulk_edit_documents({
-  documents: [1, 2, 3],
-  method: "add_tag",
-  tag: 5
-})
+### Taxonomy (`taxonomy`)
 
-// Set correspondent and document type
-bulk_edit_documents({
-  documents: [4, 5],
-  method: "set_correspondent",
-  correspondent: 2
-})
+`tag_list`, `tag_create`, `tag_update`, `tag_delete`, `correspondent_list`, `correspondent_create`, `document_type_list`, `document_type_create`.
 
-// Merge documents
-bulk_edit_documents({
-  documents: [6, 7, 8],
-  method: "merge",
-  metadata_document_id: 6,
-  delete_originals: true
-})
+### Bulk (`bulk`)
 
-// Split document into parts
-bulk_edit_documents({
-  documents: [9],
-  method: "split",
-  pages: "[1-2,3-4,5]"
-})
+`documents_bulk_edit` (every paperless bulk method, with `dry_run` to preview the selection first) and `objects_bulk_edit` (delete or set permissions on tags, correspondents, document types, storage paths).
 
-// Modify multiple tags at once
-bulk_edit_documents({
-  documents: [10, 11],
-  method: "modify_tags",
-  add_tags: [1, 2],
-  remove_tags: [3, 4]
-})
-```
+### Versions (`versions`, API v10+)
 
-#### post_document
-Upload a new document to Paperless-NGX.
+`document_version_upload`, `document_version_label`, `document_version_delete`.
 
-Parameters:
-- file: Base64 encoded file content
-- filename: Name of the file
-- title (optional): Title for the document
-- created (optional): DateTime when the document was created (e.g. "2024-01-19" or "2024-01-19 06:15:00+02:00")
-- correspondent (optional): ID of a correspondent
-- document_type (optional): ID of a document type
-- storage_path (optional): ID of a storage path
-- tags (optional): Array of tag IDs
-- archive_serial_number (optional): Archive serial number
-- custom_fields (optional): Array of custom field IDs
+### Migrating from the upstream server
 
-```typescript
-post_document({
-  file: "base64_encoded_content",
-  filename: "invoice.pdf",
-  title: "January Invoice",
-  created: "2024-01-19",
-  correspondent: 1,
-  document_type: 2,
-  tags: [1, 3],
-  archive_serial_number: "2024-001"
-})
-```
+Every upstream tool name still works as an alias. The three per-type bulk tools have been merged:
 
-### Tag Operations
+| Upstream | Now |
+| --- | --- |
+| `search_documents`, `list_documents` | `document_search` |
+| `get_document` | `document_get` |
+| `post_document` | `document_upload` |
+| `download_document` | `document_download` |
+| `bulk_edit_documents` | `documents_bulk_edit` |
+| `list_tags`, `create_tag`, `update_tag`, `delete_tag` | `tag_list`, `tag_create`, `tag_update`, `tag_delete` |
+| `bulk_edit_tags`, `bulk_edit_correspondents`, `bulk_edit_document_types` | `objects_bulk_edit` |
 
-#### list_tags
-Get all tags.
+Set `PAPERLESS_LEGACY_TOOL_NAMES=0` to drop the aliases.
 
-```typescript
-list_tags()
-```
+---
 
-#### create_tag
-Create a new tag.
+## Safety
 
-Parameters:
-- name: Tag name
-- color (optional): Hex color code (e.g. "#ff0000")
-- match (optional): Text pattern to match
-- matching_algorithm (optional): One of "any", "all", "exact", "regular expression", "fuzzy"
+- **`readonly` mode** does not merely reject mutating calls — it never registers those tools, so they cannot be invoked.
+- **Destructive tools require `confirm: true`**: deletions, page removal, and merges/splits that delete their originals.
+- **`PAPERLESS_MAX_DESTRUCTIVE`** caps how many objects one destructive call may touch.
+- **`dry_run`** on `documents_bulk_edit` reports what the selection contains and changes nothing.
+- Tokens and passwords are redacted from logs, and logs never touch stdout.
 
-```typescript
-create_tag({
-  name: "Invoice",
-  color: "#ff0000",
-  match: "invoice",
-  matching_algorithm: "fuzzy"
-})
-```
+---
 
-### Correspondent Operations
+## Compatibility
 
-#### list_correspondents
-Get all correspondents.
+| paperless-ngx | API version | Support |
+| --- | --- | --- |
+| 3.x | 9, 10 | Full |
+| 2.13 – 2.17 | 5 – 8 | Supported; version-gated tools are hidden |
+| ≤ 2.12 | ≤ 4 | Best effort, untested |
 
-```typescript
-list_correspondents()
-```
+The server reads `X-Api-Version` from the instance on startup and negotiates the highest version both sides understand.
 
-#### create_correspondent
-Create a new correspondent.
-
-Parameters:
-- name: Correspondent name
-- match (optional): Text pattern to match
-- matching_algorithm (optional): One of "any", "all", "exact", "regular expression", "fuzzy"
-
-```typescript
-create_correspondent({
-  name: "ACME Corp",
-  match: "ACME",
-  matching_algorithm: "fuzzy"
-})
-```
-
-### Document Type Operations
-
-#### list_document_types
-Get all document types.
-
-```typescript
-list_document_types()
-```
-
-#### create_document_type
-Create a new document type.
-
-Parameters:
-- name: Document type name
-- match (optional): Text pattern to match
-- matching_algorithm (optional): One of "any", "all", "exact", "regular expression", "fuzzy"
-
-```typescript
-create_document_type({
-  name: "Invoice",
-  match: "invoice total amount due",
-  matching_algorithm: "any"
-})
-```
-
-## Error Handling
-
-The server will show clear error messages if:
-- The Paperless-NGX URL or API token is incorrect
-- The Paperless-NGX server is unreachable
-- The requested operation fails
-- The provided parameters are invalid
+---
 
 ## Development
 
-Want to contribute or modify the server? Here's what you need to know:
-
-1. Clone the repository
-2. Install dependencies:
 ```bash
 npm install
+npm run dev:paperless          # local paperless-ngx at http://localhost:8000 (admin/admin)
+npm run dev -- http://localhost:8000 <token>
+npm test
+npm run typecheck
+npm run inspect                # MCP Inspector
 ```
 
-3. Make your changes to server.js
-4. Test locally:
-```bash
-node server.js http://localhost:8000 your-test-token
-```
+---
 
-The server is built with:
-- [litemcp](https://github.com/wong2/litemcp): A TypeScript framework for building MCP servers
-- [zod](https://github.com/colinhacks/zod): TypeScript-first schema validation
+## Credits
 
-## API Documentation
-
-This MCP server implements endpoints from the Paperless-NGX REST API. For more details about the underlying API, see the [official documentation](https://docs.paperless-ngx.com/api/).
-
-## Running the MCP Server
-
-The MCP server can be run in two modes:
-
-### 1. stdio (default)
-
-This is the default mode. The server communicates over stdio, suitable for CLI and direct integrations.
-
-```
-npm run start -- <baseUrl> <token>
-```
-
-### 2. HTTP (Streamable HTTP Transport)
-
-To run the server as an HTTP service, use the `--http` flag. You can also specify the port with `--port` (default: 3000). This mode requires [Express](https://expressjs.com/) to be installed (it is included as a dependency).
-
-```
-npm run start -- <baseUrl> <token> --http --port 3000
-```
-
-- The MCP API will be available at `POST /mcp` on the specified port.
-- Each request is handled statelessly, following the [StreamableHTTPServerTransport](https://github.com/modelcontextprotocol/typescript-sdk) pattern.
-- GET and DELETE requests to `/mcp` will return 405 Method Not Allowed.
+Originally created by Nick Loui as [nloui/paperless-mcp](https://github.com/nloui/paperless-mcp). ISC licensed; see [LICENSE](LICENSE) and [NOTICE](NOTICE).

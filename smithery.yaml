@@ -3,7 +3,6 @@
 startCommand:
   type: stdio
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
     type: object
     required:
       - baseUrl
@@ -11,11 +10,26 @@ startCommand:
     properties:
       baseUrl:
         type: string
-        description: The base URL of your Paperless-NGX instance.
+        description: The base URL of your paperless-ngx instance.
       token:
         type: string
-        description: The API token for accessing your Paperless-NGX instance.
+        description: The API token for accessing your paperless-ngx instance.
+      toolsets:
+        type: string
+        description: >-
+          Comma-separated toolsets to expose, or "full" for everything.
+          Defaults to core,taxonomy,search,bulk.
+      mode:
+        type: string
+        enum: [readonly, write, admin]
+        description: readonly refuses to register any mutating tool. Defaults to write.
   commandFunction:
-    # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({command: 'node', args: ['src/index.js', config.baseUrl, config.token]})
+    (config) => ({
+      command: 'node',
+      args: ['dist/index.js', config.baseUrl, config.token],
+      env: {
+        ...(config.toolsets ? { PAPERLESS_TOOLSETS: config.toolsets } : {}),
+        ...(config.mode ? { PAPERLESS_MODE: config.mode } : {})
+      }
+    })
