@@ -1,0 +1,20 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Project structure
+
+- ESM-only, Node >= 20.11, strict TypeScript. Build with `tsup` (`npm run build` → `dist/index.js`); run from source with `npm run dev -- <baseUrl> <token>` (tsx).
+- Relative imports must carry the `.js` extension, even from `.ts` files.
+- Layers, outermost first — each one may only reach the layer below it:
+  - `src/index.ts` — CLI entry; `--help`, `--version`, transport selection.
+  - `src/config/schema.ts` — resolves env + CLI into `ResolvedConfig`. All configuration lives here.
+  - `src/runtime/` — logger, `createSession()` (one `McpServer` per session), stdio and Streamable HTTP transports.
+  - `src/tools/` — MCP tool definitions via `defineTool()`, plus the registry that decides which are exposed.
+  - `src/paperless/` — REST client: `http.ts` (auth, retries, API-version negotiation, error normalization), `resources/` (per-endpoint clients), `capabilities.ts`, `filters.ts`, `pagination.ts`.
+- Tool handlers return a `ToolOutput` (`{ text, data?, extraContent? }`) from `tools/shared/responses.ts`. Never build a `CallToolResult` in a handler and never return a bare API object — the registry owns the envelope, truncation and error handling.
+- Throw `PaperlessError` for anything the model should be able to recover from; the registry turns it into an `isError` result carrying the hint.
+- Logging goes to **stderr only** (`runtime/logger.ts`). A `console.log` corrupts the stdio JSON-RPC stream.
+- New tools must declare a `toolset`, accurate `annotations` (`readOnlyHint` / `destructiveHint` / `idempotentHint`), a description written for the model, and a test. Destructive tools take `confirm` and go through `tools/shared/guards.ts`.
+- Tests: `npm test` (vitest). Unit tests under `tests/unit/`, MCP-level tests under `tests/integration/` using `InMemoryTransport` with the fake paperless in `tests/helpers/`.
