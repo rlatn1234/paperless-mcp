@@ -15,6 +15,8 @@ export const BULK_EDIT_METHODS = [
   "split",
   "rotate",
   "delete_pages",
+  "edit_pdf",
+  "remove_password",
 ] as const;
 
 export type BulkEditMethod = (typeof BULK_EDIT_METHODS)[number];

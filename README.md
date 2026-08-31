@@ -4,7 +4,7 @@ An MCP (Model Context Protocol) server for [paperless-ngx](https://docs.paperles
 
 A fork of [nloui/paperless-mcp](https://github.com/nloui/paperless-mcp), rebuilt around a typed API client, a gated tool registry, and output shaped to fit in a context window.
 
-> **Status: v0.2.0 — in progress.** Documents, the full taxonomy (tags, correspondents, document types, storage paths, custom fields) and saved views are done. Sharing, workflows, mail rules and administration are on the way.
+> **Status: v0.3.0 — in progress.** Documents, the full taxonomy, saved views, background tasks, trash, users and archive statistics are done. Sharing, workflows and mail rules are on the way.
 
 ---
 
@@ -70,11 +70,12 @@ PAPERLESS_TOOLSETS=full                         # everything available
 | --- | --- |
 | `core` | documents: search, read, update, delete, upload, notes, metadata, suggestions, history, files |
 | `taxonomy` | tags, correspondents, document types, storage paths, custom fields — full CRUD |
-| `search` | global search, autocomplete, statistics *(planned)* |
+| `search` | archive statistics, cross-object search, term completion |
 | `bulk` | bulk document edits and bulk object operations |
 | `versions` | document version management (requires API v10) |
 | `views` | saved views, UI settings |
-| `sharing`, `workflows`, `mail`, `admin`, `ai` | *planned* |
+| `admin` | background tasks, trash, users, groups, system status |
+| `sharing`, `workflows`, `mail`, `ai` | *planned* |
 
 ---
 
@@ -132,6 +133,27 @@ Full CRUD for all five taxonomy resources. Each `*_list` tool also accepts an `i
 | Custom fields | `custom_field_list`, `custom_field_create`, `custom_field_update`, `custom_field_delete` |
 
 `storage_path_test` renders a path template against a real document and returns the filename it would produce, without storing anything — worth calling before creating or changing a template, since a wrong placeholder silently refiles documents.
+
+### Search and statistics (`search`)
+
+| Tool | What it does |
+| --- | --- |
+| `statistics_get` | Document totals, inbox count, file-type breakdown, taxonomy counts, next ASN. |
+| `search_global` | One query across documents, tags, correspondents, types, paths, saved views, users, groups, workflows, mail rules and custom fields. |
+| `search_autocomplete` | Completions for a partial word, from the document index. |
+
+### Administration (`admin`)
+
+| Tool | What it does |
+| --- | --- |
+| `task_list`, `task_get` | Background jobs with status, duration and the documents they produced — how you confirm an upload finished or find out why it failed. |
+| `task_acknowledge` | Mark noisy failures as seen. |
+| `trash_list`, `trash_restore` | See and undo deletions. |
+| `trash_empty` | Permanent deletion. Requires `PAPERLESS_MODE=admin` **and** `confirm`. |
+| `user_list`, `group_list` | Resolve the user and group ids every permission parameter takes. |
+| `system_status` | Version, database, index, classifier and storage health. |
+
+Permission parameters (`owner`, `view_users`, `change_groups`) take ids that only `user_list` and `group_list` can resolve, so enable the `admin` toolset when you intend to manage access.
 
 ### Saved views and UI settings (`views`)
 

@@ -161,12 +161,38 @@ export interface CustomField {
 export interface PaperlessTask {
   id: number;
   task_id: string;
-  task_file_name: string | null;
   status: string;
-  result: string | null;
+  status_display?: string;
+  task_type?: string;
+  task_type_display?: string;
+  trigger_source_display?: string;
   date_created?: string;
+  date_started?: string | null;
   date_done?: string | null;
-  related_document?: number | null;
+  duration_seconds?: number | null;
+  related_document_ids?: number[];
+  acknowledged?: boolean;
+  owner?: number | null;
+  input_data?: unknown;
+  result_data?: unknown;
+}
+
+export interface PaperlessUser {
+  id: number;
+  username: string;
+  first_name?: string;
+  last_name?: string;
+  is_active?: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+  groups?: number[];
+  is_mfa_enabled?: boolean;
+}
+
+export interface PaperlessGroup {
+  id: number;
+  name: string;
+  permissions?: string[];
 }
 
 export interface SavedViewFilterRule {

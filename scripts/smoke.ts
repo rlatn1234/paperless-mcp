@@ -88,6 +88,14 @@ async function main(url: string, apiKey: string): Promise<void> {
   await check("custom_field_list", "custom_field_list", {});
   await check("saved_view_list", "saved_view_list", {});
   await check("ui_settings_get", "ui_settings_get", {});
+  await check("statistics_get", "statistics_get", {});
+  await check("search_global", "search_global", { query: "inv" });
+  await check("search_autocomplete", "search_autocomplete", { term: "inv" });
+  await check("system_status", "system_status", {});
+  await check("task_list", "task_list", { page_size: 5 });
+  await check("trash_list", "trash_list", { page_size: 5 });
+  await check("user_list", "user_list", {});
+  await check("group_list", "group_list", {});
   await check("document_next_asn", "document_next_asn", {});
 
   // Follow-up calls need a real id, so take one from a minimal search.

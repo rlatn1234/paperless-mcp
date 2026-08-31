@@ -5,8 +5,17 @@ import { BulkResource } from "./resources/bulk.js";
 import { CrudResource } from "./resources/crud.js";
 import { DocumentsResource } from "./resources/documents.js";
 import { StoragePathsResource } from "./resources/storagePaths.js";
+import { SystemResource, TrashResource } from "./resources/system.js";
+import { TasksResource } from "./resources/tasks.js";
 import { SavedViewsResource, UiSettingsResource } from "./resources/views.js";
-import type { Correspondent, CustomField, DocumentType, Tag } from "./types.js";
+import type {
+  Correspondent,
+  CustomField,
+  DocumentType,
+  PaperlessGroup,
+  PaperlessUser,
+  Tag,
+} from "./types.js";
 
 /**
  * Aggregate of every resource client, plus the shared transport.
@@ -25,6 +34,11 @@ export class PaperlessClient {
   readonly savedViews: SavedViewsResource;
   readonly uiSettings: UiSettingsResource;
   readonly bulk: BulkResource;
+  readonly tasks: TasksResource;
+  readonly trash: TrashResource;
+  readonly system: SystemResource;
+  readonly users: CrudResource<PaperlessUser>;
+  readonly groups: CrudResource<PaperlessGroup>;
 
   constructor(config: ResolvedConfig, logger: Logger) {
     this.http = new PaperlessHttp({
@@ -46,5 +60,10 @@ export class PaperlessClient {
     this.savedViews = new SavedViewsResource(this.http);
     this.uiSettings = new UiSettingsResource(this.http);
     this.bulk = new BulkResource(this.http);
+    this.tasks = new TasksResource(this.http);
+    this.trash = new TrashResource(this.http);
+    this.system = new SystemResource(this.http);
+    this.users = new CrudResource<PaperlessUser>(this.http, "/users/");
+    this.groups = new CrudResource<PaperlessGroup>(this.http, "/groups/");
   }
 }

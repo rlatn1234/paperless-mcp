@@ -14,7 +14,18 @@ import { installFakePaperless } from "../helpers/fakePaperless.js";
  * per token.
  */
 const CHARS_PER_TOKEN = 4;
-const DEFAULT_PROFILE_TOKEN_BUDGET = 12_000;
+
+/**
+ * The hard limit is the full profile: 20k tokens, the ceiling this project set
+ * itself for what a tool listing may cost a conversation. The default profile
+ * gets a tighter one so growth there has to be deliberate.
+ *
+ * Raised from 12k when P4 landed tasks, trash, users and statistics. If the
+ * full profile approaches its ceiling in a later phase, split
+ * `documents_bulk_edit` first — it carries parameters for sixteen different
+ * operations and is consistently the largest single definition.
+ */
+const DEFAULT_PROFILE_TOKEN_BUDGET = 15_000;
 const FULL_PROFILE_TOKEN_BUDGET = 20_000;
 
 let cleanup: Array<() => Promise<void>> = [];

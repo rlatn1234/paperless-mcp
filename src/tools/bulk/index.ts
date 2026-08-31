@@ -37,6 +37,10 @@ interface BulkEditArgs extends PermissionsInput {
   pages?: string;
   degrees?: number;
   remote_ocr?: boolean;
+  pdf_operations?: Array<{ page: number; rotate?: number; doc?: number }>;
+  pdf_password?: string;
+  include_metadata?: boolean;
+  update_document?: boolean;
   merge_permissions?: boolean;
   dry_run?: boolean;
   confirm?: boolean;
@@ -116,6 +120,26 @@ function buildParameters(args: BulkEditArgs): Record<string, unknown> {
     case "reprocess":
       if (args.remote_ocr !== undefined) parameters["remote_ocr"] = args.remote_ocr;
       break;
+    case "edit_pdf":
+      // Validated server-side: operations is a list of {page, rotate?, doc?}.
+      parameters["operations"] = args.pdf_operations ?? [];
+      if (args.include_metadata !== undefined)
+        parameters["include_metadata"] = args.include_metadata;
+      if (args.update_document !== undefined) parameters["update_document"] = args.update_document;
+      if (args.delete_originals !== undefined)
+        parameters["delete_original"] = args.delete_originals;
+      if (args.remote_ocr !== undefined) parameters["remote_ocr"] = args.remote_ocr;
+      break;
+    case "remove_password":
+      if (!args.pdf_password) {
+        throw new PaperlessError({
+          code: "validation",
+          message: 'method "remove_password" needs the PDF password.',
+          hint: "Ask the user for the password and pass it as pdf_password.",
+        });
+      }
+      parameters["password"] = args.pdf_password;
+      break;
     case "delete":
       break;
   }
@@ -127,7 +151,7 @@ export const documentsBulkEditTool = defineTool({
   name: "documents_bulk_edit",
   title: "Bulk edit documents",
   description:
-    "Apply one operation to many documents at once: assign correspondent/type/storage path, add or remove tags and custom fields, set permissions, reprocess, rotate, merge, split, delete pages, or delete. Get the ids from document_search. Call with dry_run=true first to see exactly what the selection contains before changing anything.",
+    "Apply one operation to many documents at once: assign correspondent/type/storage path, add or remove tags and custom fields, set permissions, reprocess, rotate, merge, split, delete pages, rearrange a PDF (edit_pdf), strip a PDF password, or delete. Get the ids from document_search. Call with dry_run=true first to see exactly what the selection contains before changing anything.",
   toolset: "bulk",
   inputSchema: {
     documents: z
@@ -161,7 +185,38 @@ export const documentsBulkEditTool = defineTool({
       .describe("For merge/split: delete the source documents afterwards. Irreversible."),
     pages: z.string().optional().describe('Page spec for split/delete_pages, e.g. "1,3,5-7".'),
     degrees: z.number().int().optional().describe("For rotate: 90, 180 or 270."),
-    remote_ocr: z.boolean().optional().describe("For reprocess: use the remote OCR engine."),
+    remote_ocr: z
+      .boolean()
+      .optional()
+      .describe("For reprocess/edit_pdf: use the remote OCR engine."),
+    pdf_operations: z
+      .array(
+        z.object({
+          page: z.number().int().describe("1-based source page number."),
+          rotate: z.number().int().optional().describe("Rotation in degrees: 90, 180 or 270."),
+          doc: z
+            .number()
+            .int()
+            .optional()
+            .describe("Output document index, to split pages across several documents."),
+        }),
+      )
+      .optional()
+      .describe(
+        "For edit_pdf: the pages to keep, in order. Pages you leave out are dropped, so list every page you want. Give each page a `doc` index to split one PDF into several.",
+      ),
+    pdf_password: z
+      .string()
+      .optional()
+      .describe("For remove_password: the password that currently opens the PDF."),
+    include_metadata: z
+      .boolean()
+      .optional()
+      .describe("For edit_pdf: carry metadata to the result."),
+    update_document: z
+      .boolean()
+      .optional()
+      .describe("For edit_pdf: replace the source document instead of creating a new one."),
     merge_permissions: z
       .boolean()
       .optional()

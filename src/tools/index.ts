@@ -1,3 +1,4 @@
+import { adminTools } from "./admin/index.js";
 import { bulkTools } from "./bulk/index.js";
 import {
   documentGetTool,
@@ -24,6 +25,7 @@ import {
   documentVersionUploadTool,
 } from "./documents/versions.js";
 import type { AnyToolDefinition } from "./registry.js";
+import { searchTools } from "./search/index.js";
 import { taxonomyTools } from "./taxonomy/index.js";
 import { viewTools } from "./views/index.js";
 
@@ -57,6 +59,8 @@ export const allTools: AnyToolDefinition[] = [
   ...documentTools,
   ...taxonomyTools,
   ...bulkTools,
+  ...searchTools,
+  ...adminTools,
   ...viewTools,
   ...versionTools,
 ];

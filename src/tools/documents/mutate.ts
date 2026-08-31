@@ -13,7 +13,7 @@ export const documentUpdateTool = defineTool({
   name: "document_update",
   title: "Update a document",
   description:
-    "Change one document's metadata: title, date, correspondent, type, storage path, tags, ASN or owner. Tags can be replaced wholesale with `tags`, or adjusted incrementally with add_tags/remove_tags. For the same change across many documents use documents_bulk_edit instead.",
+    "Change one document's metadata: title, date, correspondent, type, storage path, tags, ASN, owner or custom field values. Tags and custom fields can be replaced wholesale or adjusted incrementally, and untouched values are preserved. For the same change across many documents use documents_bulk_edit instead.",
   toolset: "core",
   inputSchema: {
     ...documentIdShape,
@@ -56,6 +56,23 @@ export const documentUpdateTool = defineTool({
       .optional()
       .describe("Archive serial number, or null to clear. Use document_next_asn to pick one."),
     owner: z.number().int().nullable().optional().describe("Owning user id, or null for unowned."),
+    custom_fields: z
+      .array(
+        z.object({
+          field: z.number().int().describe("Custom field id from custom_field_list."),
+          value: z
+            .union([z.string(), z.number(), z.boolean(), z.null()])
+            .describe(
+              "Value to store. Dates are YYYY-MM-DD, monetary is a string like 'EUR412.00', documentlink takes a document id, select takes the option label.",
+            ),
+        }),
+      )
+      .optional()
+      .describe("Set custom field values. Fields you do not mention keep their current value."),
+    remove_custom_fields: z
+      .array(z.number().int())
+      .optional()
+      .describe("Custom field ids to clear from this document."),
   },
   annotations: {
     readOnlyHint: false,
@@ -76,6 +93,8 @@ export const documentUpdateTool = defineTool({
       remove_tags?: number[];
       archive_serial_number?: number | null;
       owner?: number | null;
+      custom_fields?: Array<{ field: number; value: string | number | boolean | null }>;
+      remove_custom_fields?: number[];
     },
     context,
   ) => {
@@ -100,6 +119,20 @@ export const documentUpdateTool = defineTool({
       for (const tag of args.add_tags ?? []) next.add(tag);
       for (const tag of args.remove_tags ?? []) next.delete(tag);
       patch["tags"] = [...next];
+    }
+
+    if (args.custom_fields?.length || args.remove_custom_fields?.length) {
+      // paperless replaces the whole custom-field set on PATCH, so merge
+      // against what the document already carries rather than wiping the rest.
+      const current = await context.api.documents.getOne(args.id, {
+        fields: ["id", "custom_fields"],
+      });
+      const merged = new Map<number, unknown>(
+        (current.custom_fields ?? []).map((entry) => [entry.field, entry.value]),
+      );
+      for (const entry of args.custom_fields ?? []) merged.set(entry.field, entry.value);
+      for (const field of args.remove_custom_fields ?? []) merged.delete(field);
+      patch["custom_fields"] = [...merged].map(([field, value]) => ({ field, value }));
     }
 
     if (Object.keys(patch).length === 0) {

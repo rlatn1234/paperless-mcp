@@ -49,6 +49,19 @@ export type UsedPaths = Path<
   | "/api/saved_views/"
   | "/api/saved_views/{id}/"
   | "/api/ui_settings/"
+  | "/api/tasks/"
+  | "/api/tasks/{id}/"
+  | "/api/tasks/acknowledge/"
+  | "/api/tasks/status_counts/"
+  | "/api/trash/"
+  | "/api/users/"
+  | "/api/users/{id}/"
+  | "/api/groups/"
+  | "/api/groups/{id}/"
+  | "/api/statistics/"
+  | "/api/search/"
+  | "/api/search/autocomplete/"
+  | "/api/status/"
 >;
 
 // --- Fields ----------------------------------------------------------------
@@ -143,3 +156,38 @@ export type SuggestionsFields = Fields<
   components["schemas"]["Suggestions"],
   "correspondents" | "tags" | "document_types" | "storage_paths" | "dates"
 >;
+
+export type TaskFields = Fields<
+  components["schemas"]["TaskSerializerV10"],
+  | "id"
+  | "task_id"
+  | "status"
+  | "status_display"
+  | "task_type"
+  | "task_type_display"
+  | "date_created"
+  | "date_started"
+  | "date_done"
+  | "duration_seconds"
+  | "related_document_ids"
+  | "acknowledged"
+  | "result_data"
+>;
+
+export type UserFields = Fields<
+  components["schemas"]["User"],
+  | "id"
+  | "username"
+  | "first_name"
+  | "last_name"
+  | "is_active"
+  | "is_staff"
+  | "is_superuser"
+  | "groups"
+>;
+
+export type GroupFields = Fields<components["schemas"]["Group"], "id" | "name" | "permissions">;
+
+export type TrashActions = components["schemas"]["TrashActionEnum"] extends "restore" | "empty"
+  ? true
+  : never;

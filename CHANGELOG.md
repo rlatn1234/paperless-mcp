@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.3.0
+
+Closes the gaps where an implemented tool promised something the missing piece
+could not deliver. Everything here came out of auditing what actually did not
+work, rather than working down the endpoint list.
+
+### Added
+
+- **Custom field values.** `document_update` now sets them, merging into the
+  document's existing values — paperless replaces the whole set on PATCH, so
+  sending only the changed field would silently clear the others.
+  `remove_custom_fields` clears one. Until now a field could be defined but
+  never filled in after upload.
+- **Background tasks** — `task_list`, `task_get`, `task_acknowledge`.
+  `document_upload` returns a task id and there was previously no way to look it
+  up, so "did the OCR finish, and did it work?" was unanswerable.
+- **Trash** — `trash_list`, `trash_restore`, `trash_empty`. `document_delete`
+  told users their document was recoverable while offering no way to recover it.
+  `trash_empty` is the only operation here that genuinely destroys data: it
+  requires `PAPERLESS_MODE=admin` and `confirm`, and reports the count first.
+- **Users and groups** — `user_list`, `group_list`. Every permission parameter
+  takes ids these tools are the only way to resolve. The API returns a
+  `password` field on users; the renderer whitelists fields so it can never be
+  echoed, and a test enforces that.
+- **Statistics and cross-object search** — `statistics_get`, `search_global`,
+  `search_autocomplete`, `system_status`.
+- **PDF page editing and password removal** via `documents_bulk_edit`:
+  `edit_pdf` takes the page operations paperless validates
+  (`{page, rotate?, doc?}`), `remove_password` takes `pdf_password`.
+
+### Changed
+
+- Default profile is 42 tools (~12.3k tokens); `full` is 59 (~15.8k). The
+  default budget test ceiling moved from 12k to 15k, with the reasoning recorded
+  in the test.
+- `search_global` requires a 3-character query, which is what the server
+  enforces — the schema now says so instead of letting the call fail.
+
 ## 0.2.0
 
 Completes the taxonomy: every object a document can point at is now fully
