@@ -1,0 +1,12 @@
+This project is a fork of paperless-mcp by Nick Loui.
+
+  Original project: https://github.com/nloui/paperless-mcp
+  Original author:  Nick Loui
+  License:          ISC
+
+This fork (https://github.com/rlatn1234/paperless-mcp) extends the original
+work to cover the complete paperless-ngx REST API surface. It remains
+licensed under the ISC license; the original copyright notice and permission
+notice are retained in LICENSE.
+
+Modifications in this fork are documented in CHANGELOG.md.
