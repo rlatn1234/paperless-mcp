@@ -4,6 +4,7 @@ import express, { type Request, type Response } from "express";
 import type { ResolvedConfig } from "../config/schema.js";
 import { createSession } from "./createServer.js";
 import type { Logger } from "./logger.js";
+import { endProcess } from "./shutdown.js";
 
 function methodNotAllowed(res: Response): void {
   res.status(405).json({
@@ -70,7 +71,7 @@ export async function startHttp(config: ResolvedConfig, logger: Logger): Promise
 
     const shutdown = (signal: string) => {
       logger.info("shutting down", { signal });
-      httpServer.close(() => process.exit(0));
+      httpServer.close(() => endProcess(0));
     };
     process.once("SIGINT", () => shutdown("SIGINT"));
     process.once("SIGTERM", () => shutdown("SIGTERM"));

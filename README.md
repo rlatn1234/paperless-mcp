@@ -181,6 +181,29 @@ npm run typecheck
 npm run inspect                # MCP Inspector
 ```
 
+Against a real instance (read-only; writes nothing):
+
+```bash
+PAPERLESS_URL=https://paperless.example.com PAPERLESS_API_KEY=... npm run smoke
+```
+
+### Running the local build from an MCP client
+
+The package is not published yet, so point the client at the build output:
+
+```json
+{
+  "mcpServers": {
+    "paperless": {
+      "command": "node",
+      "args": ["/absolute/path/to/paperless-mcp/dist/index.js", "https://paperless.example.com", "your-api-token"]
+    }
+  }
+}
+```
+
+Run `npm run build` after pulling changes — the client runs `dist/`, not `src/`.
+
 ---
 
 ## Credits

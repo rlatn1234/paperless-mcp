@@ -24,7 +24,8 @@
     "test:watch": "vitest",
     "inspect": "npm run build && npx -y @modelcontextprotocol/inspector node dist/index.js",
     "dev:paperless": "docker compose -f docker-compose.dev.yml up -d",
-    "dev:paperless:down": "docker compose -f docker-compose.dev.yml down -v"
+    "dev:paperless:down": "docker compose -f docker-compose.dev.yml down -v",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "keywords": [
     "mcp",
