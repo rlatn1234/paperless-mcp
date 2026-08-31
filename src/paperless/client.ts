@@ -4,7 +4,9 @@ import { PaperlessHttp } from "./http.js";
 import { BulkResource } from "./resources/bulk.js";
 import { CrudResource } from "./resources/crud.js";
 import { DocumentsResource } from "./resources/documents.js";
-import type { Correspondent, CustomField, DocumentType, StoragePath, Tag } from "./types.js";
+import { StoragePathsResource } from "./resources/storagePaths.js";
+import { SavedViewsResource, UiSettingsResource } from "./resources/views.js";
+import type { Correspondent, CustomField, DocumentType, Tag } from "./types.js";
 
 /**
  * Aggregate of every resource client, plus the shared transport.
@@ -18,8 +20,10 @@ export class PaperlessClient {
   readonly tags: CrudResource<Tag>;
   readonly correspondents: CrudResource<Correspondent>;
   readonly documentTypes: CrudResource<DocumentType>;
-  readonly storagePaths: CrudResource<StoragePath>;
+  readonly storagePaths: StoragePathsResource;
   readonly customFields: CrudResource<CustomField>;
+  readonly savedViews: SavedViewsResource;
+  readonly uiSettings: UiSettingsResource;
   readonly bulk: BulkResource;
 
   constructor(config: ResolvedConfig, logger: Logger) {
@@ -37,8 +41,10 @@ export class PaperlessClient {
     this.tags = new CrudResource<Tag>(this.http, "/tags/");
     this.correspondents = new CrudResource<Correspondent>(this.http, "/correspondents/");
     this.documentTypes = new CrudResource<DocumentType>(this.http, "/document_types/");
-    this.storagePaths = new CrudResource<StoragePath>(this.http, "/storage_paths/");
+    this.storagePaths = new StoragePathsResource(this.http);
     this.customFields = new CrudResource<CustomField>(this.http, "/custom_fields/");
+    this.savedViews = new SavedViewsResource(this.http);
+    this.uiSettings = new UiSettingsResource(this.http);
     this.bulk = new BulkResource(this.http);
   }
 }

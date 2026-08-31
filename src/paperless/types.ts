@@ -168,3 +168,33 @@ export interface PaperlessTask {
   date_done?: string | null;
   related_document?: number | null;
 }
+
+export interface SavedViewFilterRule {
+  rule_type: number;
+  value: string | null;
+}
+
+export interface SavedView {
+  id: number;
+  name: string;
+  sort_field?: string | null;
+  sort_reverse?: boolean;
+  filter_rules: SavedViewFilterRule[];
+  page_size?: number | null;
+  display_mode?: string | null;
+  display_fields?: unknown;
+  icon?: string;
+  owner?: number | null;
+}
+
+/**
+ * `/ui_settings/` returns an open-ended blob: the signed-in user, the
+ * permissions they hold, and whatever the web UI has stored. Only `settings` is
+ * writable, and paperless replaces it wholesale.
+ */
+export interface UiSettings {
+  user?: { id: number; username?: string; is_superuser?: boolean };
+  settings?: Record<string, unknown>;
+  permissions?: string[];
+  [key: string]: unknown;
+}

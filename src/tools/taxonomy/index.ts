@@ -1,80 +1,27 @@
 import { z } from "zod";
 
-import { nameFilterShape, nameFilterToQuery } from "../../paperless/filters.js";
-import { pageInfo } from "../../paperless/pagination.js";
-import type { CrudResource } from "../../paperless/resources/crud.js";
 import type { Correspondent, DocumentType, Tag } from "../../paperless/types.js";
-import type { ToolContext } from "../../runtime/context.js";
 import { type AnyToolDefinition, defineTool } from "../registry.js";
-import { requireConfirm } from "../shared/guards.js";
-import { output, renderPageFooter, renderTable } from "../shared/responses.js";
+import { output } from "../shared/responses.js";
+import { confirmShape, matchingShape } from "../shared/schemas.js";
+import { customFieldTools } from "./customFields.js";
 import {
-  confirmShape,
-  matchingShape,
-  normalizeMatchingAlgorithm,
-  pageShape,
-} from "../shared/schemas.js";
-
-interface ListArgs {
-  name_contains?: string;
-  name_exact?: string;
-  page?: number;
-  page_size?: number;
-}
-
-interface MatchingArgs {
-  match?: string;
-  matching_algorithm?: string | number;
-  is_insensitive?: boolean;
-}
-
-function matchingPatch(args: MatchingArgs): Record<string, unknown> {
-  const patch: Record<string, unknown> = {};
-  if (args.match !== undefined) patch["match"] = args.match;
-  const algorithm = normalizeMatchingAlgorithm(args.matching_algorithm);
-  if (algorithm !== undefined) patch["matching_algorithm"] = algorithm;
-  if (args.is_insensitive !== undefined) patch["is_insensitive"] = args.is_insensitive;
-  return patch;
-}
-
-async function listResource<T extends { id: number; name: string; document_count?: number }>(
-  resource: CrudResource<T>,
-  args: ListArgs,
-  context: ToolContext,
-  toolName: string,
-  extraColumns?: { headers: string[]; cell: (item: T) => Array<string | number | undefined> },
-) {
-  const page = args.page ?? 1;
-  const pageSize = Math.min(args.page_size ?? 100, context.config.maxPageSize);
-  const response = await resource.list({
-    ...nameFilterToQuery(args),
-    page,
-    page_size: pageSize,
-    ordering: "name",
-  });
-
-  const headers = ["id", "name", "documents", ...(extraColumns?.headers ?? [])];
-  const rows = response.results.map((item) => [
-    item.id,
-    item.name,
-    item.document_count ?? "",
-    ...(extraColumns?.cell(item) ?? []),
-  ]);
-
-  const info = pageInfo(response, page, pageSize);
-  return output(
-    `${renderTable(headers, rows, "None found.")}\n\n${renderPageFooter(info, toolName)}`,
-    response.results,
-  );
-}
+  deleteResource,
+  type ListArgs,
+  listResource,
+  listShape,
+  type MatchingArgs,
+  matchingPatch,
+} from "./shared.js";
+import { storagePathTools } from "./storagePaths.js";
 
 export const tagListTool = defineTool({
   name: "tag_list",
   title: "List tags",
   description:
-    "List tags with their ids, colours, document counts and auto-matching rules. Call this first whenever a request mentions a tag by name — every other tool takes tag ids, not names.",
+    "List tags with their ids, colours, document counts and auto-matching rules, or fetch one by id. Call this first whenever a request mentions a tag by name — every other tool takes tag ids, not names.",
   toolset: "taxonomy",
-  inputSchema: { ...nameFilterShape, ...pageShape },
+  inputSchema: listShape,
   annotations: { readOnlyHint: true, openWorldHint: true },
   aliases: ["list_tags"],
   handler: (args: ListArgs, context) =>
@@ -165,7 +112,7 @@ export const tagDeleteTool = defineTool({
   name: "tag_delete",
   title: "Delete a tag",
   description:
-    "Permanently delete a tag and strip it from every document that carries it. This cannot be undone and the documents themselves are untouched. Report the tag's document count to the user before calling with confirm=true.",
+    "Permanently delete a tag and strip it from every document that carries it. The documents themselves are untouched. Report the tag's document count to the user before calling with confirm=true.",
   toolset: "taxonomy",
   inputSchema: { id: z.number().int().describe("Tag id from tag_list."), ...confirmShape },
   annotations: {
@@ -175,26 +122,17 @@ export const tagDeleteTool = defineTool({
     openWorldHint: true,
   },
   aliases: ["delete_tag"],
-  handler: async (args: { id: number; confirm?: boolean }, context) => {
-    const tag = await context.api.tags.get(args.id);
-    requireConfirm(
-      args.confirm,
-      "delete this tag",
-      `Tag "${tag.name}" would be removed from ${tag.document_count ?? "an unknown number of"} document(s).`,
-    );
-    await context.api.tags.remove(args.id);
-    context.taxonomy.invalidate();
-    return output(`Deleted tag ${args.id} ("${tag.name}").`, { id: args.id });
-  },
+  handler: (args: { id: number; confirm?: boolean }, context) =>
+    deleteResource(context.api.tags, args.id, args.confirm, "tag", context),
 });
 
 export const correspondentListTool = defineTool({
   name: "correspondent_list",
   title: "List correspondents",
   description:
-    "List correspondents (the people, companies and institutions documents come from) with ids and document counts. Look names up here before filtering or assigning — every other tool wants the id.",
+    "List correspondents (the people, companies and institutions documents come from) with ids and document counts, or fetch one by id. Look names up here before filtering or assigning — every other tool wants the id.",
   toolset: "taxonomy",
-  inputSchema: { ...nameFilterShape, ...pageShape },
+  inputSchema: listShape,
   annotations: { readOnlyHint: true, openWorldHint: true },
   aliases: ["list_correspondents"],
   handler: (args: ListArgs, context) =>
@@ -234,13 +172,62 @@ export const correspondentCreateTool = defineTool({
   },
 });
 
+export const correspondentUpdateTool = defineTool({
+  name: "correspondent_update",
+  title: "Update a correspondent",
+  description:
+    "Rename a correspondent or adjust its auto-matching rule. Renaming keeps it attached to every document already assigned to it, which makes this the right way to fix a misspelled sender.",
+  toolset: "taxonomy",
+  inputSchema: {
+    id: z.number().int().describe("Correspondent id from correspondent_list."),
+    name: z.string().optional().describe("New name."),
+    ...matchingShape,
+  },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  handler: async (args: { id: number; name?: string } & MatchingArgs, context) => {
+    const patch: Record<string, unknown> = matchingPatch(args);
+    if (args.name !== undefined) patch["name"] = args.name;
+    const correspondent = await context.api.correspondents.update(args.id, patch);
+    context.taxonomy.invalidate();
+    return output(
+      `Updated correspondent ${correspondent.id} ("${correspondent.name}").`,
+      correspondent,
+    );
+  },
+});
+
+export const correspondentDeleteTool = defineTool({
+  name: "correspondent_delete",
+  title: "Delete a correspondent",
+  description:
+    "Permanently delete a correspondent. Documents assigned to it keep existing but lose their sender. To merge duplicates, reassign the documents with documents_bulk_edit first, then delete the empty one.",
+  toolset: "taxonomy",
+  inputSchema: {
+    id: z.number().int().describe("Correspondent id from correspondent_list."),
+    ...confirmShape,
+  },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  handler: (args: { id: number; confirm?: boolean }, context) =>
+    deleteResource(context.api.correspondents, args.id, args.confirm, "correspondent", context),
+});
+
 export const documentTypeListTool = defineTool({
   name: "document_type_list",
   title: "List document types",
   description:
-    "List document types (invoice, contract, payslip, …) with ids and document counts. Resolve a type name to its id here before filtering or assigning.",
+    "List document types (invoice, contract, payslip, …) with ids and document counts, or fetch one by id. Resolve a type name to its id here before filtering or assigning.",
   toolset: "taxonomy",
-  inputSchema: { ...nameFilterShape, ...pageShape },
+  inputSchema: listShape,
   annotations: { readOnlyHint: true, openWorldHint: true },
   aliases: ["list_document_types"],
   handler: (args: ListArgs, context) =>
@@ -277,6 +264,55 @@ export const documentTypeCreateTool = defineTool({
   },
 });
 
+export const documentTypeUpdateTool = defineTool({
+  name: "document_type_update",
+  title: "Update a document type",
+  description:
+    "Rename a document type or adjust its auto-matching rule. Only the fields you pass change; documents already classified keep the type.",
+  toolset: "taxonomy",
+  inputSchema: {
+    id: z.number().int().describe("Document type id from document_type_list."),
+    name: z.string().optional().describe("New name."),
+    ...matchingShape,
+  },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  handler: async (args: { id: number; name?: string } & MatchingArgs, context) => {
+    const patch: Record<string, unknown> = matchingPatch(args);
+    if (args.name !== undefined) patch["name"] = args.name;
+    const documentType = await context.api.documentTypes.update(args.id, patch);
+    context.taxonomy.invalidate();
+    return output(
+      `Updated document type ${documentType.id} ("${documentType.name}").`,
+      documentType,
+    );
+  },
+});
+
+export const documentTypeDeleteTool = defineTool({
+  name: "document_type_delete",
+  title: "Delete a document type",
+  description:
+    "Permanently delete a document type. Documents classified with it survive but become untyped. Reassign them with documents_bulk_edit first if they should keep a type.",
+  toolset: "taxonomy",
+  inputSchema: {
+    id: z.number().int().describe("Document type id from document_type_list."),
+    ...confirmShape,
+  },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  handler: (args: { id: number; confirm?: boolean }, context) =>
+    deleteResource(context.api.documentTypes, args.id, args.confirm, "document type", context),
+});
+
 export const taxonomyTools: AnyToolDefinition[] = [
   tagListTool,
   tagCreateTool,
@@ -284,6 +320,12 @@ export const taxonomyTools: AnyToolDefinition[] = [
   tagDeleteTool,
   correspondentListTool,
   correspondentCreateTool,
+  correspondentUpdateTool,
+  correspondentDeleteTool,
   documentTypeListTool,
   documentTypeCreateTool,
+  documentTypeUpdateTool,
+  documentTypeDeleteTool,
+  ...storagePathTools,
+  ...customFieldTools,
 ];

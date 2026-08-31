@@ -25,6 +25,7 @@ import {
 } from "./documents/versions.js";
 import type { AnyToolDefinition } from "./registry.js";
 import { taxonomyTools } from "./taxonomy/index.js";
+import { viewTools } from "./views/index.js";
 
 export const documentTools: AnyToolDefinition[] = [
   documentSearchTool,
@@ -56,5 +57,6 @@ export const allTools: AnyToolDefinition[] = [
   ...documentTools,
   ...taxonomyTools,
   ...bulkTools,
+  ...viewTools,
   ...versionTools,
 ];

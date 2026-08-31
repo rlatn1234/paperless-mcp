@@ -33,7 +33,12 @@ async function main(url: string, apiKey: string): Promise<void> {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [entry],
-    env: { PAPERLESS_URL: url, PAPERLESS_API_KEY: apiKey, PAPERLESS_LOG_LEVEL: "warn" },
+    env: {
+      PAPERLESS_URL: url,
+      PAPERLESS_API_KEY: apiKey,
+      PAPERLESS_LOG_LEVEL: "warn",
+      PAPERLESS_TOOLSETS: "full",
+    },
     stderr: "inherit",
   });
 
@@ -79,6 +84,10 @@ async function main(url: string, apiKey: string): Promise<void> {
   await check("document_search (browse)", "document_search", { page_size: 5 });
   await check("document_search (query)", "document_search", { query: "a", page_size: 3 });
   await check("document_search (untagged)", "document_search", { is_tagged: false, page_size: 3 });
+  await check("storage_path_list", "storage_path_list", {});
+  await check("custom_field_list", "custom_field_list", {});
+  await check("saved_view_list", "saved_view_list", {});
+  await check("ui_settings_get", "ui_settings_get", {});
   await check("document_next_asn", "document_next_asn", {});
 
   // Follow-up calls need a real id, so take one from a minimal search.
@@ -100,6 +109,10 @@ async function main(url: string, apiKey: string): Promise<void> {
     await check("document_suggestions", "document_suggestions", { id });
     await check("document_similar", "document_similar", { id, page_size: 3 });
     await check("document_thumbnail", "document_thumbnail", { id });
+    await check("storage_path_test", "storage_path_test", {
+      path: "{created_year}/{title}",
+      document: id,
+    });
   } else {
     console.log("no documents in the archive; skipping the detail checks");
   }

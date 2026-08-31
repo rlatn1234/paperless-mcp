@@ -35,6 +35,25 @@ export const FIXTURES = {
   ],
   documentTypes: [{ id: 20, name: "Invoice", document_count: 9 }],
   storagePaths: [{ id: 30, name: "Archive", path: "archive/{created_year}", document_count: 3 }],
+  customFields: [
+    { id: 40, name: "Invoice total", data_type: "monetary", document_count: 4, extra_data: null },
+    {
+      id: 41,
+      name: "Status",
+      data_type: "select",
+      document_count: 2,
+      extra_data: { select_options: [{ label: "Paid" }, { label: "Unpaid" }] },
+    },
+  ],
+  savedViews: [
+    {
+      id: 50,
+      name: "Unpaid invoices",
+      sort_field: "created",
+      sort_reverse: true,
+      filter_rules: [{ rule_type: 6, value: "1" }],
+    },
+  ],
   documents: [
     {
       id: 100,
@@ -76,6 +95,14 @@ export function installFakePaperless(overrides: Record<string, RouteHandler> = {
     "GET /api/storage_paths/": () => ({ json: paginated(FIXTURES.storagePaths) }),
     "GET /api/documents/": () => ({ json: paginated(FIXTURES.documents) }),
     "GET /api/documents/100/": () => ({ json: FIXTURES.documents[0] }),
+    "GET /api/tags/1/": () => ({ json: FIXTURES.tags[0] }),
+    "GET /api/storage_paths/30/": () => ({ json: FIXTURES.storagePaths[0] }),
+    "POST /api/storage_paths/test/": () => ({ json: "archive/2026/acme-invoice.pdf" }),
+    "GET /api/custom_fields/": () => ({ json: paginated(FIXTURES.customFields) }),
+    "GET /api/custom_fields/40/": () => ({ json: FIXTURES.customFields[0] }),
+    "GET /api/saved_views/": () => ({ json: paginated(FIXTURES.savedViews) }),
+    "GET /api/saved_views/50/": () => ({ json: FIXTURES.savedViews[0] }),
+    "GET /api/ui_settings/2/": () => ({ json: {} }),
     ...overrides,
   };
 

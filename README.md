@@ -4,7 +4,7 @@ An MCP (Model Context Protocol) server for [paperless-ngx](https://docs.paperles
 
 A fork of [nloui/paperless-mcp](https://github.com/nloui/paperless-mcp), rebuilt around a typed API client, a gated tool registry, and output shaped to fit in a context window.
 
-> **Status: v0.1.0 — in progress.** Documents and the core taxonomy are done. Storage paths, custom fields, saved views, sharing, workflows, mail rules and administration are on the way.
+> **Status: v0.2.0 — in progress.** Documents, the full taxonomy (tags, correspondents, document types, storage paths, custom fields) and saved views are done. Sharing, workflows, mail rules and administration are on the way.
 
 ---
 
@@ -69,11 +69,12 @@ PAPERLESS_TOOLSETS=full                         # everything available
 | Toolset | Contents |
 | --- | --- |
 | `core` | documents: search, read, update, delete, upload, notes, metadata, suggestions, history, files |
-| `taxonomy` | tags, correspondents, document types |
+| `taxonomy` | tags, correspondents, document types, storage paths, custom fields — full CRUD |
 | `search` | global search, autocomplete, statistics *(planned)* |
 | `bulk` | bulk document edits and bulk object operations |
 | `versions` | document version management (requires API v10) |
-| `views`, `sharing`, `workflows`, `mail`, `admin`, `ai` | *planned* |
+| `views` | saved views, UI settings |
+| `sharing`, `workflows`, `mail`, `admin`, `ai` | *planned* |
 
 ---
 
@@ -93,7 +94,7 @@ PAPERLESS_TOOLSETS=full                         # everything available
 | `PAPERLESS_RETRIES` | `3` | Retries for 429 and 5xx on idempotent requests. |
 | `PAPERLESS_API_VERSION` | probed | Pin the API version instead of negotiating it. |
 | `PAPERLESS_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` \| `silent`. Logs go to stderr. |
-| `PAPERLESS_LEGACY_TOOL_NAMES` | `1` | Keep the upstream tool names working as aliases. |
+| `PAPERLESS_LEGACY_TOOL_NAMES` | `0` | Also expose the upstream tool names as aliases. Off by default: an alias repeats a full input schema in the tool listing, which cost more than every real description put together. |
 | `PAPERLESS_STRUCTURED_OUTPUT` | `0` | Also emit `structuredContent`. Off by default because most clients feed it to the model alongside the text, doubling token cost. |
 
 ---
@@ -120,7 +121,21 @@ PAPERLESS_TOOLSETS=full                         # everything available
 
 ### Taxonomy (`taxonomy`)
 
-`tag_list`, `tag_create`, `tag_update`, `tag_delete`, `correspondent_list`, `correspondent_create`, `document_type_list`, `document_type_create`.
+Full CRUD for all five taxonomy resources. Each `*_list` tool also accepts an `id` to fetch one object in detail.
+
+| Resource | Tools |
+| --- | --- |
+| Tags | `tag_list`, `tag_create`, `tag_update`, `tag_delete` |
+| Correspondents | `correspondent_list`, `correspondent_create`, `correspondent_update`, `correspondent_delete` |
+| Document types | `document_type_list`, `document_type_create`, `document_type_update`, `document_type_delete` |
+| Storage paths | `storage_path_list`, `storage_path_create`, `storage_path_update`, `storage_path_delete`, `storage_path_test` |
+| Custom fields | `custom_field_list`, `custom_field_create`, `custom_field_update`, `custom_field_delete` |
+
+`storage_path_test` renders a path template against a real document and returns the filename it would produce, without storing anything — worth calling before creating or changing a template, since a wrong placeholder silently refiles documents.
+
+### Saved views and UI settings (`views`)
+
+`saved_view_list` (with `id` for the full filter rules), `saved_view_create`, `saved_view_update`, `saved_view_delete`, `ui_settings_get`, `ui_settings_update`. `ui_settings_update` merges into the current settings rather than replacing the whole blob, which is what the raw endpoint does.
 
 ### Bulk (`bulk`)
 
@@ -144,7 +159,7 @@ Every upstream tool name still works as an alias. The three per-type bulk tools 
 | `list_tags`, `create_tag`, `update_tag`, `delete_tag` | `tag_list`, `tag_create`, `tag_update`, `tag_delete` |
 | `bulk_edit_tags`, `bulk_edit_correspondents`, `bulk_edit_document_types` | `objects_bulk_edit` |
 
-Set `PAPERLESS_LEGACY_TOOL_NAMES=0` to drop the aliases.
+Aliases are off by default. Set `PAPERLESS_LEGACY_TOOL_NAMES=1` while migrating.
 
 ---
 
