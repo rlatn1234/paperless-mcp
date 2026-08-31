@@ -8,7 +8,7 @@
   },
   "main": "./dist/index.js",
   "bin": {
-    "paperless-mcp": "./dist/index.js"
+    "paperless-mcp": "dist/index.js"
   },
   "files": [
     "dist",
